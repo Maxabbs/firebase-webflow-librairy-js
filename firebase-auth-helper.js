@@ -147,9 +147,37 @@ function waitForFirebase(callback) {
     }
 }
 
+function getUserEmail() {
+  const user = firebase.auth().currentUser;
+  return user ? user.email : null;
+}
+
+// Fonction pour récupérer le displayName
+function getUserDisplayName() {
+  const user = firebase.auth().currentUser;
+  return user ? user.displayName : null;
+}
+
+// Fonction pour injecter les infos dans des input text
+function getUserInfo(emailId, displayNameId) {
+  document.addEventListener("DOMContentLoaded", function () {
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) return;
+
+      const emailInput = document.getElementById(emailId);
+      const displayNameInput = document.getElementById(displayNameId);
+
+      if (emailInput) emailInput.value = user.email;
+      if (displayNameInput) displayNameInput.value = user.displayName || "";
+    });
+  });
+}
+
+
 // 📦 Exposer les fonctions globalement
 window.initFirebase = initFirebase;
 window.requireAuth = requireAuth;
 window.setupLogin = setupLogin;
 window.setupGoogleLogin = setupGoogleLogin;
 window.setupLogout = setupLogout;
+window.getUserInfo = getUserInfo;

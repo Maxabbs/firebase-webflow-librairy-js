@@ -78,12 +78,31 @@ function setupLogin(
           window.location.href = redirectOnSuccess;
         })
         .catch((error) => {
-          if (errorMessage) {
-            errorMessage.textContent = "Erreur : " + error.message;
-            errorMessage.style.display = "block";
-            errorMessage.style.color = "red";
+          // Si erreur liée au credential, on check les providers
+          if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
+            firebase.auth().fetchSignInMethodsForEmail(email)
+              .then((methods) => {
+                if (methods.includes("google.com")) {
+                  if (errorMessage) {
+                    errorMessage.textContent = "Cet email est lié à un compte Google. Veuillez vous connecter avec Google.";
+                    errorMessage.style.display = "block";
+                    errorMessage.style.color = "red";
+                  }
+                } else {
+                  // Message d’erreur classique
+                  if (errorMessage) {
+                    errorMessage.textContent = "Erreur : " + error.message;
+                    errorMessage.style.display = "block";
+                    errorMessage.style.color = "red";
+                  }
+                }
+              });
           } else {
-            alert("Erreur : " + error.message);
+            if (errorMessage) {
+              errorMessage.textContent = "Erreur : " + error.message;
+              errorMessage.style.display = "block";
+              errorMessage.style.color = "red";
+            }
           }
         });
     });

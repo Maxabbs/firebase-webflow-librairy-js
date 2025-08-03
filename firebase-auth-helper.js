@@ -1,3 +1,5 @@
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
 // === firebase-auth-helper.js ===
 
 // ⚙️ Initialiser Firebase
@@ -15,6 +17,29 @@ function initFirebase() {
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
+}
+// ⚙️ Initialiser Firebase
+function initFirebase() {
+  // Import the functions you need from the SDKs you need
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyDpSD7DH9ZqNGbKV9cY5qlc9YbPlyAc7GY",
+    authDomain: "parazar-client-project.firebaseapp.com",
+    projectId: "parazar-client-project",
+    storageBucket: "parazar-client-project.firebasestorage.app",
+    messagingSenderId: "684169267322",
+    appId: "1:684169267322:web:4309a01b1943e3f8ff53c3",
+    measurementId: "G-T7BGTDKPLN"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+
 }
 
 function hideBody() {

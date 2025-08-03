@@ -40,34 +40,56 @@ function requireAuth(redirectIfNotLoggedIn = "/firebase/login") {
 }
 
 // 🔑 Login Email & Mot de passe
-function setupLogin(emailId, passwordId, buttonId, messageId, redirectOnSuccess = "/firebase/dashboard") {
-    document.addEventListener("DOMContentLoaded", function () {
-        const emailInput = document.getElementById(emailId);
-        const passwordInput = document.getElementById(passwordId);
-        const loginButton = document.getElementById(buttonId);
-        const messageBox = document.getElementById(messageId);
+function setupLogin(
+  emailId,
+  passwordId,
+  buttonId,
+  successDivId,
+  errorDivId,
+  redirectOnSuccess = "/firebase/dashboard"
+) {
+  document.addEventListener("DOMContentLoaded", function () {
+    const emailInput = document.getElementById(emailId);
+    const passwordInput = document.getElementById(passwordId);
+    const loginButton = document.getElementById(buttonId);
+    const successMessage = document.getElementById(successDivId);
+    const errorMessage = document.getElementById(errorDivId);
 
-        if (!loginButton) return;
+    if (!emailInput || !passwordInput || !loginButton) return;
 
-        loginButton.addEventListener("click", function (e) {
-            e.preventDefault();
+    loginButton.addEventListener("click", function (e) {
+      e.preventDefault();
 
-            const email = emailInput.value;
-            const password = passwordInput.value;
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
 
-            firebase.auth().signInWithEmailAndPassword(email, password)
-                .then(() => {
-                    messageBox.textContent = "Connexion réussie !";
-                    messageBox.style.color = "green";
-                    window.location.href = redirectOnSuccess;
-                })
-                .catch((error) => {
-                    messageBox.textContent = "Erreur : " + error.message;
-                    messageBox.style.color = "red";
-                });
+      // Reset messages
+      if (successMessage) successMessage.style.display = "none";
+      if (errorMessage) errorMessage.style.display = "none";
+
+      firebase.auth().signInWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          if (successMessage) {
+            successMessage.textContent = "Connexion réussie !";
+            successMessage.style.display = "block";
+            successMessage.style.color = "green";
+          }
+
+          window.location.href = redirectOnSuccess;
+        })
+        .catch((error) => {
+          if (errorMessage) {
+            errorMessage.textContent = "Erreur : " + error.message;
+            errorMessage.style.display = "block";
+            errorMessage.style.color = "red";
+          } else {
+            alert("Erreur : " + error.message);
+          }
         });
     });
+  });
 }
+
 
 // 🔑 Login avec Google
 function setupGoogleLogin(buttonId, redirectOnSuccess = "/firebase/dashboard") {

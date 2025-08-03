@@ -17,16 +17,22 @@ function initFirebase() {
     }
 }
 
+function hideBody() {
+  document.body.style.visibility = "hidden";
+}
+
+function showBody() {
+  document.body.style.visibility = "visible";
+}
+
 // 🔐 Vérifier que l’utilisateur est connecté avant d’afficher la page
 function requireAuth(redirectIfNotLoggedIn = "/firebase/login") {
-    document.body.style.visibility = "hidden";
-
     waitForFirebase(() => {
         firebase.auth().onAuthStateChanged(function (user) {
             if (!user) {
                 window.location.href = redirectIfNotLoggedIn;
             } else {
-                document.body.style.visibility = "visible";
+                showBody();
                 console.log("✅ Connecté :", user.email);
             }
         });

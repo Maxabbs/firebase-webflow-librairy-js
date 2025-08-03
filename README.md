@@ -19,7 +19,13 @@ A JS librairy which permit to communicate between Firebase and Webflow
 # In login page
 ## Before body part
 <script>
-  setupLogin("login-email", "login-password", "login-button", "login-message", "/firebase/dashboard");
+  setupLogin(
+  "login-email", 
+  "login-password", 
+  "login-button", 
+  "login-success-message", 
+  "login-error-message", 
+  "/firebase/dashboard");
 </script>
 
 

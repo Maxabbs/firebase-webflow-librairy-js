@@ -2,96 +2,102 @@
 
 // ⚙️ Initialiser Firebase
 function initFirebase() {
-  const firebaseConfig = {
-    apiKey: "AIzaSyDpSDAc7GY",
-    authDomain: "parazar-client-project.firebaseapp.com",
-    projectId: "parazar-client-project",
-    storageBucket: "parazar-client-project.firebasestorage.app",
-    messagingSenderId: "684169267322",
-    appId: "1:68416f53c3",
-    measurementId: "G-T7LN"
-  };
+    const firebaseConfig = {
+        apiKey: "AIzaSyDpSD7DH9ZqNGbKV9cY5qlc9YbPlyAc7GY",
+        authDomain: "parazar-client-project.firebaseapp.com",
+        projectId: "parazar-client-project",
+        storageBucket: "parazar-client-project.firebasestorage.app",
+        messagingSenderId: "684169267322",
+        appId: "1:684169267322:web:4309a01b1943e3f8ff53c3",
+        measurementId: "G-T7BGTDKPLN"
+    };
 
-  if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-  }
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+}
+
+function hideBody() {
+  document.body.style.visibility = "hidden";
+}
+
+function showBody() {
+  document.body.style.visibility = "visible";
 }
 
 // 🔐 Vérifier que l’utilisateur est connecté avant d’afficher la page
 function requireAuth(redirectIfNotLoggedIn = "/firebase/login") {
-  document.body.style.visibility = "hidden";
-
-  waitForFirebase(() => {
-    firebase.auth().onAuthStateChanged(function (user) {
-      if (!user) {
-        window.location.href = redirectIfNotLoggedIn;
-      } else {
-        document.body.style.visibility = "visible";
-        console.log("✅ Connecté :", user.email);
-      }
+    waitForFirebase(() => {
+        firebase.auth().onAuthStateChanged(function (user) {
+            if (!user) {
+                window.location.href = redirectIfNotLoggedIn;
+            } else {
+                showBody();
+                console.log("✅ Connecté :", user.email);
+            }
+        });
     });
-  });
 }
 
 // 🔑 Login (utiliser dans la page de connexion)
 function setupLogin(emailId, passwordId, buttonId, messageId, redirectOnSuccess = "/firebase/dashboard") {
-  document.addEventListener("DOMContentLoaded", function () {
-    const emailInput = document.getElementById(emailId);
-    const passwordInput = document.getElementById(passwordId);
-    const loginButton = document.getElementById(buttonId);
-    const messageBox = document.getElementById(messageId);
+    document.addEventListener("DOMContentLoaded", function () {
+        const emailInput = document.getElementById(emailId);
+        const passwordInput = document.getElementById(passwordId);
+        const loginButton = document.getElementById(buttonId);
+        const messageBox = document.getElementById(messageId);
 
-    if (!loginButton) return;
+        if (!loginButton) return;
 
-    loginButton.addEventListener("click", function (e) {
-      e.preventDefault();
+        loginButton.addEventListener("click", function (e) {
+            e.preventDefault();
 
-      const email = emailInput.value;
-      const password = passwordInput.value;
+            const email = emailInput.value;
+            const password = passwordInput.value;
 
-      firebase.auth().signInWithEmailAndPassword(email, password)
-        .then(() => {
-          messageBox.textContent = "Connexion réussie !";
-          messageBox.style.color = "green";
-          window.location.href = redirectOnSuccess;
-        })
-        .catch((error) => {
-          messageBox.textContent = "Erreur : " + error.message;
-          messageBox.style.color = "red";
+            firebase.auth().signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    messageBox.textContent = "Connexion réussie !";
+                    messageBox.style.color = "green";
+                    window.location.href = redirectOnSuccess;
+                })
+                .catch((error) => {
+                    messageBox.textContent = "Erreur : " + error.message;
+                    messageBox.style.color = "red";
+                });
         });
     });
-  });
 }
 
 // 🚪 Logout (utiliser dans les pages protégées)
 function setupLogout(buttonId, redirectAfterLogout = "/") {
-  document.addEventListener("DOMContentLoaded", function () {
-    const logoutButton = document.getElementById(buttonId);
+    document.addEventListener("DOMContentLoaded", function () {
+        const logoutButton = document.getElementById(buttonId);
 
-    if (!logoutButton) return;
+        if (!logoutButton) return;
 
-    logoutButton.addEventListener("click", function (e) {
-      e.preventDefault();
+        logoutButton.addEventListener("click", function (e) {
+            e.preventDefault();
 
-      firebase.auth().signOut()
-        .then(() => {
-          console.log("Déconnexion réussie.");
-          window.location.href = redirectAfterLogout;
-        })
-        .catch((error) => {
-          console.error("Erreur lors de la déconnexion :", error);
+            firebase.auth().signOut()
+                .then(() => {
+                    console.log("Déconnexion réussie.");
+                    window.location.href = redirectAfterLogout;
+                })
+                .catch((error) => {
+                    console.error("Erreur lors de la déconnexion :", error);
+                });
         });
     });
-  });
 }
 
 // ⏳ Utilitaire : attendre que Firebase soit prêt
 function waitForFirebase(callback) {
-  if (typeof firebase !== "undefined" && firebase.auth) {
-    callback();
-  } else {
-    setTimeout(() => waitForFirebase(callback), 100);
-  }
+    if (typeof firebase !== "undefined" && firebase.auth) {
+        callback();
+    } else {
+        setTimeout(() => waitForFirebase(callback), 100);
+    }
 }
 
 // 📦 Exposer les fonctions globalement

@@ -164,11 +164,11 @@ function getUserInfo(emailId, displayNameId) {
     firebase.auth().onAuthStateChanged(function (user) {
       if (!user) return;
 
-      const emailInput = document.getElementById(emailId);
-      const displayNameInput = document.getElementById(displayNameId);
+      const emailEl = document.getElementById(emailId);
+      const displayNameEl = document.getElementById(displayNameId);
 
-      if (emailInput) emailInput.value = user.email;
-      if (displayNameInput) displayNameInput.value = user.displayName || "";
+      if (emailEl) emailEl.textContent = user.email;
+      if (displayNameEl) displayNameEl.textContent = user.displayName || "";
     });
   });
 }

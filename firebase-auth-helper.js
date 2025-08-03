@@ -1,5 +1,3 @@
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
 // === firebase-auth-helper.js ===
 
 // ⚙️ Initialiser Firebase
@@ -17,29 +15,6 @@ function initFirebase() {
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
-}
-// ⚙️ Initialiser Firebase
-function initFirebase() {
-  // Import the functions you need from the SDKs you need
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-  const firebaseConfig = {
-    apiKey: "AIzaSyDpSD7DH9ZqNGbKV9cY5qlc9YbPlyAc7GY",
-    authDomain: "parazar-client-project.firebaseapp.com",
-    projectId: "parazar-client-project",
-    storageBucket: "parazar-client-project.firebasestorage.app",
-    messagingSenderId: "684169267322",
-    appId: "1:684169267322:web:4309a01b1943e3f8ff53c3",
-    measurementId: "G-T7BGTDKPLN"
-  };
-
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
-
 }
 
 function hideBody() {
@@ -102,32 +77,13 @@ function setupLogin(
 
           window.location.href = redirectOnSuccess;
         })
-        .catch((error) => {
-          // Si erreur liée au credential, on check les providers
-          if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
-            firebase.auth().fetchSignInMethodsForEmail(email)
-              .then((methods) => {
-                if (methods.includes("google.com")) {
-                  if (errorMessage) {
-                    errorMessage.textContent = "Cet email est lié à un compte Google. Veuillez vous connecter avec Google.";
-                    errorMessage.style.display = "block";
-                    errorMessage.style.color = "red";
-                  }
-                } else {
-                  // Message d’erreur classique
-                  if (errorMessage) {
-                    errorMessage.textContent = "Erreur : " + error.message;
-                    errorMessage.style.display = "block";
-                    errorMessage.style.color = "red";
-                  }
-                }
-              });
+        .catch(() => {
+          if (errorMessage) {
+            errorMessage.textContent = "L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.";
+            errorMessage.style.display = "block";
+            errorMessage.style.color = "red";
           } else {
-            if (errorMessage) {
-              errorMessage.textContent = "Erreur : " + error.message;
-              errorMessage.style.display = "block";
-              errorMessage.style.color = "red";
-            }
+            alert("L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.");
           }
         });
     });

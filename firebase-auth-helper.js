@@ -18,11 +18,11 @@ function initFirebase() {
 }
 
 function hideBody() {
-  document.body.style.visibility = "hidden";
+    document.body.style.visibility = "hidden";
 }
 
 function showBody() {
-  document.body.style.visibility = "visible";
+    document.body.style.visibility = "visible";
 }
 
 // 🔐 Vérifier que l’utilisateur est connecté avant d’afficher la page
@@ -39,7 +39,7 @@ function requireAuth(redirectIfNotLoggedIn = "/firebase/login") {
     });
 }
 
-// 🔑 Login (utiliser dans la page de connexion)
+// 🔑 Login Email & Mot de passe
 function setupLogin(emailId, passwordId, buttonId, messageId, redirectOnSuccess = "/firebase/dashboard") {
     document.addEventListener("DOMContentLoaded", function () {
         const emailInput = document.getElementById(emailId);
@@ -67,6 +67,31 @@ function setupLogin(emailId, passwordId, buttonId, messageId, redirectOnSuccess 
                 });
         });
     });
+}
+
+// 🔑 Login avec Google
+function setupGoogleLogin(buttonId, redirectOnSuccess = "/firebase/dashboard") {
+  document.addEventListener("DOMContentLoaded", function () {
+    const googleBtn = document.getElementById(buttonId);
+
+    if (!googleBtn) return;
+
+    googleBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const provider = new firebase.auth.GoogleAuthProvider();
+
+      firebase.auth().signInWithPopup(provider)
+        .then((result) => {
+          console.log("Connexion Google réussie :", result.user.email);
+          window.location.href = redirectOnSuccess;
+        })
+        .catch((error) => {
+          console.error("Erreur connexion Google :", error.message);
+          alert("Erreur : " + error.message);
+        });
+    });
+  });
 }
 
 // 🚪 Logout (utiliser dans les pages protégées)
@@ -104,4 +129,5 @@ function waitForFirebase(callback) {
 window.initFirebase = initFirebase;
 window.requireAuth = requireAuth;
 window.setupLogin = setupLogin;
+window.setupGoogleLogin = setupGoogleLogin;
 window.setupLogout = setupLogout;

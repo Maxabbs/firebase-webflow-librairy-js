@@ -9,6 +9,9 @@ A JS librairy which permit to communicate between Firebase and Webflow
 <!-- Firebase Authentication SDK (compat) -->
 <script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-auth-compat.js"></script>
 
+<!-- Firestore SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/12.0.0/firebase-firestore-compat.js"></script>
+
 <script src="https://maxabbs.github.io/firebase-webflow-librairy-js/firebase-auth-helper.js"></script>
 
 <script>

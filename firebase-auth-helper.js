@@ -25,18 +25,21 @@ function showBody() {
     document.body.style.visibility = "visible";
 }
 
-// 🔐 Vérifier que l’utilisateur est connecté avant d’afficher la page
-function requireAuth(redirectIfNotLoggedIn = "/firebase/login") {
-    waitForFirebase(() => {
-        firebase.auth().onAuthStateChanged(function (user) {
-            if (!user) {
-                window.location.href = redirectIfNotLoggedIn;
-            } else {
-                showBody();
-                console.log("✅ Connecté :", user.email);
-            }
-        });
+// 🔐 Vérifier que l’utilisateur est connecté et email vérifié avant d’afficher la page
+function requireAuth(redirectIfNotLoggedIn = "/firebase/login", redirectIfNotVerified = "/firebase/verify-email") {
+  waitForFirebase(() => {
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) {
+        window.location.href = redirectIfNotLoggedIn;
+      } else if (!user.emailVerified && user.providerData[0].providerId === "password") {
+        // Seulement bloquer les utilisateurs email+mot de passe non vérifiés
+        window.location.href = redirectIfNotVerified;
+      } else {
+        showBody();
+        console.log("✅ Connecté :", user.email);
+      }
     });
+  });
 }
 
 // 🔑 Login Email & Mot de passe
@@ -90,8 +93,75 @@ function setupLogin(
   });
 }
 
+// ✍️ Inscription Email & Mot de passe
+function setupSignup(
+  emailId,
+  passwordId,
+  buttonId,
+  successDivId,
+  errorDivId,
+  redirectAfterVerification = "/firebase/verify-email"
+) {
+  document.addEventListener("DOMContentLoaded", function () {
+    const emailInput = document.getElementById(emailId);
+    const passwordInput = document.getElementById(passwordId);
+    const signupButton = document.getElementById(buttonId);
+    const successMessage = document.getElementById(successDivId);
+    const errorMessage = document.getElementById(errorDivId);
 
-// 🔑 Login avec Google
+    if (!emailInput || !passwordInput || !signupButton) return;
+
+    signupButton.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      // Reset messages
+      if (successMessage) successMessage.style.display = "none";
+      if (errorMessage) errorMessage.style.display = "none";
+
+      firebase.auth().createUserWithEmailAndPassword(email, password)
+        .then((userCredential) => {
+          const user = userCredential.user;
+
+          // ✉️ Envoyer l'email de vérification
+          user.sendEmailVerification()
+            .then(() => {
+              if (successMessage) {
+                successMessage.textContent = "Inscription réussie ! Un email de vérification t’a été envoyé.";
+                successMessage.style.display = "block";
+                successMessage.style.color = "green";
+              }
+
+              // ⏩ Rediriger vers la page "vérifie ton email"
+              setTimeout(() => {
+                window.location.href = redirectAfterVerification;
+              }, 2000); // petite pause pour que l'utilisateur voie le message
+            })
+            .catch((err) => {
+              if (errorMessage) {
+                errorMessage.textContent = "Erreur lors de l'envoi de l'email de vérification.";
+                errorMessage.style.display = "block";
+                errorMessage.style.color = "red";
+              }
+            });
+        })
+        .catch((error) => {
+          if (errorMessage) {
+            errorMessage.textContent = `Erreur : ${error.message}`;
+            errorMessage.style.display = "block";
+            errorMessage.style.color = "red";
+          } else {
+            alert("Erreur lors de l'inscription : " + error.message);
+          }
+        });
+    });
+  });
+}
+
+
+// 🔑 Login & Signup avec Google
 function setupGoogleLogin(buttonId, redirectOnSuccess = "/firebase/dashboard") {
   document.addEventListener("DOMContentLoaded", function () {
     const googleBtn = document.getElementById(buttonId);
@@ -178,6 +248,7 @@ function getUserInfo(emailId, displayNameId) {
 window.initFirebase = initFirebase;
 window.requireAuth = requireAuth;
 window.setupLogin = setupLogin;
+window.setupSignup = setupSignup;
 window.setupGoogleLogin = setupGoogleLogin;
 window.setupLogout = setupLogout;
 window.getUserInfo = getUserInfo;

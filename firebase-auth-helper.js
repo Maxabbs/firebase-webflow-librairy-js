@@ -105,14 +105,14 @@ function setupLogin(
   });
 }
 
-// ✍️ Inscription Email & Mot de passe
+// ✍️ Inscription Email & Mot de passe (sans vérification immédiate)
 function setupSignup(
   emailId,
   passwordId,
   buttonId,
   successDivId,
   errorDivId,
-  redirectAfterVerification = "/firebase/verify-email"
+  redirectAfterSignup = "/firebase/verify-email"
 ) {
   document.addEventListener("DOMContentLoaded", function () {
     const emailInput = document.getElementById(emailId);
@@ -129,35 +129,20 @@ function setupSignup(
       const email = emailInput.value.trim();
       const password = passwordInput.value;
 
-      // Reset messages
+      // Réinitialise les messages
       if (successMessage) successMessage.style.display = "none";
       if (errorMessage) errorMessage.style.display = "none";
 
       firebase.auth().createUserWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          const user = userCredential.user;
+        .then(() => {
+          if (successMessage) {
+            successMessage.textContent = "Inscription réussie.";
+            successMessage.style.display = "block";
+            successMessage.style.color = "green";
+          }
 
-          // ✉️ Envoyer l'email de vérification
-          user.sendEmailVerification()
-            .then(() => {
-              if (successMessage) {
-                successMessage.textContent = "Inscription réussie ! Un email de vérification t’a été envoyé.";
-                successMessage.style.display = "block";
-                successMessage.style.color = "green";
-              }
-
-              // ⏩ Rediriger vers la page "vérifie ton email"
-              setTimeout(() => {
-                window.location.href = redirectAfterVerification;
-              }, 2000); // petite pause pour que l'utilisateur voie le message
-            })
-            .catch((err) => {
-              if (errorMessage) {
-                errorMessage.textContent = "Erreur lors de l'envoi de l'email de vérification.";
-                errorMessage.style.display = "block";
-                errorMessage.style.color = "red";
-              }
-            });
+          // Redirige vers la page de vérification (où le user pourra manuellement cliquer sur "envoyer email")
+          window.location.href = redirectAfterSignup;
         })
         .catch((error) => {
           if (errorMessage) {
@@ -168,6 +153,83 @@ function setupSignup(
             alert("Erreur lors de l'inscription : " + error.message);
           }
         });
+    });
+  });
+}
+
+function setupSendVerificationEmail(
+  buttonId,
+  successDivId,
+  errorDivId
+) {
+  document.addEventListener("DOMContentLoaded", function () {
+    waitForFirebase(() => {
+      firebase.auth().onAuthStateChanged(function (user) {
+        if (!user) return;
+
+        const button = document.getElementById(buttonId);
+        const successMsg = document.getElementById(successDivId);
+        const errorMsg = document.getElementById(errorDivId);
+
+        if (!button) return;
+
+        button.addEventListener("click", function () {
+          // Reset
+          if (successMsg) successMsg.style.display = "none";
+          if (errorMsg) errorMsg.style.display = "none";
+
+          user.sendEmailVerification()
+            .then(() => {
+              if (successMsg) {
+                successMsg.textContent = "Un email de vérification a été envoyé.";
+                successMsg.style.display = "block";
+                successMsg.style.color = "green";
+              }
+            })
+            .catch((error) => {
+              if (errorMsg) {
+                errorMsg.textContent = "Erreur : " + error.message;
+                errorMsg.style.display = "block";
+                errorMsg.style.color = "red";
+              }
+            });
+        });
+      });
+    });
+  });
+}
+
+function setupCheckEmailVerified(
+  buttonId,
+  errorDivId,
+  redirectOnVerified = "/firebase/dashboard"
+) {
+  document.addEventListener("DOMContentLoaded", function () {
+    waitForFirebase(() => {
+      firebase.auth().onAuthStateChanged(function (user) {
+        if (!user) return;
+
+        const button = document.getElementById(buttonId);
+        const errorMsg = document.getElementById(errorDivId);
+
+        if (!button) return;
+
+        button.addEventListener("click", function () {
+          if (errorMsg) errorMsg.style.display = "none";
+
+          user.reload().then(() => {
+            if (user.emailVerified) {
+              window.location.href = redirectOnVerified;
+            } else {
+              if (errorMsg) {
+                errorMsg.textContent = "Ton email n’est pas encore vérifié. Clique sur le lien dans l’email reçu.";
+                errorMsg.style.display = "block";
+                errorMsg.style.color = "red";
+              }
+            }
+          });
+        });
+      });
     });
   });
 }
@@ -261,6 +323,8 @@ window.requireAuth = requireAuth;
 window.requireEmailVerified = requireEmailVerified;
 window.setupLogin = setupLogin;
 window.setupSignup = setupSignup;
+window.setupSendVerificationEmail = setupSendVerificationEmail;
+window.setupCheckEmailVerified = setupCheckEmailVerified;
 window.setupGoogleLogin = setupGoogleLogin;
 window.setupLogout = setupLogout;
 window.getUserInfo = getUserInfo;

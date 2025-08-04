@@ -106,9 +106,11 @@ function setupLogin(
 }
 
 // ✍️ Inscription Email & Mot de passe (sans vérification immédiate)
+// ✍️ Inscription Email & Mot de passe (avec vérification que les deux mots de passe sont identiques)
 function setupSignup(
   emailId,
-  passwordId,
+  passwordId1,
+  passwordId2,
   buttonId,
   successDivId,
   errorDivId,
@@ -116,24 +118,39 @@ function setupSignup(
 ) {
   document.addEventListener("DOMContentLoaded", function () {
     const emailInput = document.getElementById(emailId);
-    const passwordInput = document.getElementById(passwordId);
+    const passwordInput1 = document.getElementById(passwordId1);
+    const passwordInput2 = document.getElementById(passwordId2);
     const signupButton = document.getElementById(buttonId);
     const successMessage = document.getElementById(successDivId);
     const errorMessage = document.getElementById(errorDivId);
 
-    if (!emailInput || !passwordInput || !signupButton) return;
+    if (!emailInput || !passwordInput1 || !passwordInput2 || !signupButton) return;
 
     signupButton.addEventListener("click", function (e) {
       e.preventDefault();
 
       const email = emailInput.value.trim();
-      const password = passwordInput.value;
+      const password1 = passwordInput1.value;
+      const password2 = passwordInput2.value;
 
       // Réinitialise les messages
       if (successMessage) successMessage.style.display = "none";
       if (errorMessage) errorMessage.style.display = "none";
 
-      firebase.auth().createUserWithEmailAndPassword(email, password)
+      // Vérifie que les mots de passe sont identiques
+      if (password1 !== password2) {
+        if (errorMessage) {
+          errorMessage.textContent = "Les mots de passe ne sont pas identiques.";
+          errorMessage.style.display = "block";
+          errorMessage.style.color = "red";
+        } else {
+          alert("Les mots de passe ne sont pas identiques.");
+        }
+        return;
+      }
+
+      // Crée le compte Firebase
+      firebase.auth().createUserWithEmailAndPassword(email, password1)
         .then(() => {
           if (successMessage) {
             successMessage.textContent = "Inscription réussie.";
@@ -141,7 +158,7 @@ function setupSignup(
             successMessage.style.color = "green";
           }
 
-          // Redirige vers la page de vérification (où le user pourra manuellement cliquer sur "envoyer email")
+          // Redirige vers la page de vérification
           window.location.href = redirectAfterSignup;
         })
         .catch((error) => {
@@ -157,11 +174,8 @@ function setupSignup(
   });
 }
 
-function setupSendVerificationEmail(
-  buttonId,
-  successDivId,
-  errorDivId
-) {
+// setupSendVerificationEmailWithCooldown
+function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldownSeconds = 30) {
   document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
       firebase.auth().onAuthStateChanged(function (user) {
@@ -174,25 +188,48 @@ function setupSendVerificationEmail(
         if (!button) return;
 
         button.addEventListener("click", function () {
-          // Reset
-          if (successMsg) successMsg.style.display = "none";
-          if (errorMsg) errorMsg.style.display = "none";
+          if (!user.emailVerified && user.providerData[0].providerId === "password") {
+            if (successMsg) successMsg.style.display = "none";
+            if (errorMsg) errorMsg.style.display = "none";
 
-          user.sendEmailVerification()
-            .then(() => {
-              if (successMsg) {
-                successMsg.textContent = "Un email de vérification a été envoyé.";
-                successMsg.style.display = "block";
-                successMsg.style.color = "green";
-              }
-            })
-            .catch((error) => {
-              if (errorMsg) {
-                errorMsg.textContent = "Erreur : " + error.message;
-                errorMsg.style.display = "block";
-                errorMsg.style.color = "red";
-              }
-            });
+            user.sendEmailVerification()
+              .then(() => {
+                if (successMsg) {
+                  successMsg.textContent = "Email de vérification envoyé !";
+                  successMsg.style.display = "block";
+                  successMsg.style.color = "green";
+                }
+
+                // Cooldown
+                button.disabled = true;
+                let remaining = cooldownSeconds;
+
+                const originalText = button.textContent;
+                const interval = setInterval(() => {
+                  button.textContent = `Renvoyer dans ${remaining}s...`;
+                  remaining--;
+
+                  if (remaining < 0) {
+                    clearInterval(interval);
+                    button.textContent = originalText;
+                    button.disabled = false;
+                  }
+                }, 1000);
+              })
+              .catch((error) => {
+                if (errorMsg) {
+                  errorMsg.textContent = "Erreur : " + error.message;
+                  errorMsg.style.display = "block";
+                  errorMsg.style.color = "red";
+                }
+              });
+          } else {
+            if (successMsg) {
+              successMsg.textContent = "Ton email est déjà vérifié.";
+              successMsg.style.display = "block";
+              successMsg.style.color = "green";
+            }
+          }
         });
       });
     });
@@ -323,7 +360,7 @@ window.requireAuth = requireAuth;
 window.requireEmailVerified = requireEmailVerified;
 window.setupLogin = setupLogin;
 window.setupSignup = setupSignup;
-window.setupSendVerificationEmail = setupSendVerificationEmail;
+window.setupSendVerificationEmailWithCooldown = setupSendVerificationEmailWithCooldown;
 window.setupCheckEmailVerified = setupCheckEmailVerified;
 window.setupGoogleLogin = setupGoogleLogin;
 window.setupLogout = setupLogout;

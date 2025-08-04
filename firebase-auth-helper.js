@@ -105,8 +105,7 @@ function setupLogin(
   });
 }
 
-// ✍️ Inscription Email & Mot de passe (sans vérification immédiate)
-// ✍️ Inscription Email & Mot de passe (avec vérification que les deux mots de passe sont identiques)
+// ✍️ Inscription Email & Mot de passe (avec vérification mot de passe identique + longueur mini)
 function setupSignup(
   emailId,
   passwordId1,
@@ -137,19 +136,27 @@ function setupSignup(
       if (successMessage) successMessage.style.display = "none";
       if (errorMessage) errorMessage.style.display = "none";
 
-      // Vérifie que les mots de passe sont identiques
+      // 💥 Vérification : mots de passe identiques
       if (password1 !== password2) {
         if (errorMessage) {
-          errorMessage.textContent = "Les mots de passe ne sont pas identiques.";
+          errorMessage.textContent = "❌ Les mots de passe ne sont pas identiques.";
           errorMessage.style.display = "block";
           errorMessage.style.color = "red";
-        } else {
-          alert("Les mots de passe ne sont pas identiques.");
         }
         return;
       }
 
-      // Crée le compte Firebase
+      // 🔒 Vérification : longueur minimale
+      if (password1.length < 8) {
+        if (errorMessage) {
+          errorMessage.textContent = "❌ Le mot de passe doit contenir au moins 8 caractères.";
+          errorMessage.style.display = "block";
+          errorMessage.style.color = "red";
+        }
+        return;
+      }
+
+      // ✅ Créer le compte
       firebase.auth().createUserWithEmailAndPassword(email, password1)
         .then(() => {
           if (successMessage) {
@@ -158,7 +165,7 @@ function setupSignup(
             successMessage.style.color = "green";
           }
 
-          // Redirige vers la page de vérification
+          // Redirection
           window.location.href = redirectAfterSignup;
         })
         .catch((error) => {
@@ -173,6 +180,7 @@ function setupSignup(
     });
   });
 }
+
 
 // setupSendVerificationEmailWithCooldown
 function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldownSeconds = 30) {

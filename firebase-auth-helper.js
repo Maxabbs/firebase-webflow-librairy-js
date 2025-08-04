@@ -25,18 +25,30 @@ function showBody() {
     document.body.style.visibility = "visible";
 }
 
-// 🔐 Vérifier que l’utilisateur est connecté et email vérifié avant d’afficher la page
-function requireAuth(redirectIfNotLoggedIn = "/firebase/login", redirectIfNotVerified = "/firebase/verify-email") {
+// Vérifie que l’utilisateur est connecté (sans exiger email vérifié)
+function requireAuth(redirectIfNotLoggedIn = "/firebase/login") {
+  waitForFirebase(() => {
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) {
+        window.location.href = redirectIfNotLoggedIn;
+      } else {
+        showBody();
+        console.log("✅ Connecté :", user.email);
+      }
+    });
+  });
+}
+
+function requireEmailVerified(redirectIfNotLoggedIn = "/firebase/login", redirectIfNotVerified = "/firebase/verify-email") {
   waitForFirebase(() => {
     firebase.auth().onAuthStateChanged(function (user) {
       if (!user) {
         window.location.href = redirectIfNotLoggedIn;
       } else if (!user.emailVerified && user.providerData[0].providerId === "password") {
-        // Seulement bloquer les utilisateurs email+mot de passe non vérifiés
         window.location.href = redirectIfNotVerified;
       } else {
         showBody();
-        console.log("✅ Connecté :", user.email);
+        console.log("✅ Email vérifié pour :", user.email);
       }
     });
   });
@@ -160,7 +172,6 @@ function setupSignup(
   });
 }
 
-
 // 🔑 Login & Signup avec Google
 function setupGoogleLogin(buttonId, redirectOnSuccess = "/firebase/dashboard") {
   document.addEventListener("DOMContentLoaded", function () {
@@ -247,6 +258,7 @@ function getUserInfo(emailId, displayNameId) {
 // 📦 Exposer les fonctions globalement
 window.initFirebase = initFirebase;
 window.requireAuth = requireAuth;
+window.requireEmailVerified = requireEmailVerified;
 window.setupLogin = setupLogin;
 window.setupSignup = setupSignup;
 window.setupGoogleLogin = setupGoogleLogin;

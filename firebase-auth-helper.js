@@ -181,9 +181,9 @@ function setupSignup(
   });
 }
 
-
 // setupSendVerificationEmailWithCooldown
-function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldownSeconds = 30) {
+// ✉️ Envoi de l’email de vérification avec cooldown et redirection si déjà vérifié
+function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldownSeconds = 30, redirectIfVerified = "/firebase/dashboard") {
   document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
       firebase.auth().onAuthStateChanged(function (user) {
@@ -196,48 +196,55 @@ function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldown
         if (!button) return;
 
         button.addEventListener("click", function () {
-          if (!user.emailVerified && user.providerData[0].providerId === "password") {
-            if (successMsg) successMsg.style.display = "none";
-            if (errorMsg) errorMsg.style.display = "none";
+          if (successMsg) successMsg.style.display = "none";
+          if (errorMsg) errorMsg.style.display = "none";
 
-            user.sendEmailVerification()
-              .then(() => {
-                if (successMsg) {
-                  successMsg.textContent = "Email de vérification envoyé !";
-                  successMsg.style.display = "block";
-                  successMsg.style.color = "green";
-                }
-
-                // Cooldown
-                button.disabled = true;
-                let remaining = cooldownSeconds;
-
-                const originalText = button.textContent;
-                const interval = setInterval(() => {
-                  button.textContent = `Renvoyer dans ${remaining}s...`;
-                  remaining--;
-
-                  if (remaining < 0) {
-                    clearInterval(interval);
-                    button.textContent = originalText;
-                    button.disabled = false;
-                  }
-                }, 1000);
-              })
-              .catch((error) => {
-                if (errorMsg) {
-                  errorMsg.textContent = "Erreur : " + error.message;
-                  errorMsg.style.display = "block";
-                  errorMsg.style.color = "red";
-                }
-              });
-          } else {
+          if (user.emailVerified || user.providerData[0].providerId !== "password") {
+            // ✅ Déjà vérifié → message + redirection
             if (successMsg) {
-              successMsg.textContent = "Ton email est déjà vérifié.";
+              successMsg.textContent = "Ton email est déjà vérifié ✅";
               successMsg.style.display = "block";
               successMsg.style.color = "green";
             }
+
+            setTimeout(() => {
+              window.location.href = redirectIfVerified;
+            }, 2000); // Laisse 2 sec pour voir le message
+            return;
           }
+
+          // 🔁 Envoi d’un nouvel email
+          user.sendEmailVerification()
+            .then(() => {
+              if (successMsg) {
+                successMsg.textContent = "Email de vérification envoyé ! 📩";
+                successMsg.style.display = "block";
+                successMsg.style.color = "green";
+              }
+
+              // 🕒 Cooldown
+              button.disabled = true;
+              let remaining = cooldownSeconds;
+              const originalText = button.textContent;
+
+              const interval = setInterval(() => {
+                button.textContent = `Renvoyer dans ${remaining}s...`;
+                remaining--;
+
+                if (remaining < 0) {
+                  clearInterval(interval);
+                  button.textContent = originalText;
+                  button.disabled = false;
+                }
+              }, 1000);
+            })
+            .catch((error) => {
+              if (errorMsg) {
+                errorMsg.textContent = "Erreur : " + error.message;
+                errorMsg.style.display = "block";
+                errorMsg.style.color = "red";
+              }
+            });
         });
       });
     });

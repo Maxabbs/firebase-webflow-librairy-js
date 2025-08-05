@@ -340,6 +340,17 @@ function getUserEmail() {
   return user ? user.email : null;
 }
 
+function feedUserEmail(emailId) {
+  document.addEventListener("DOMContentLoaded", function () {
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) return;
+
+      const emailEl = document.getElementById(emailId);
+      if (emailEl) emailEl.textContent = user.email;
+      });
+  });
+}
+
 // Fonction pour récupérer le displayName
 function getUserDisplayName() {
   const user = firebase.auth().currentUser;
@@ -368,8 +379,9 @@ window.requireAuth = requireAuth;
 window.requireEmailVerified = requireEmailVerified;
 window.setupLogin = setupLogin;
 window.setupSignup = setupSignup;
-window.setupSendVerificationEmailWithCooldown = setupSendVerificationEmailWithCooldown;
+window.setupSendVerificationEmail = setupSendVerificationEmail;
 window.setupCheckEmailVerified = setupCheckEmailVerified;
 window.setupGoogleLogin = setupGoogleLogin;
 window.setupLogout = setupLogout;
+window.feedUserEmail = feedUserEmail;
 window.getUserInfo = getUserInfo;

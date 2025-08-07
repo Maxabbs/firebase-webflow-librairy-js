@@ -187,6 +187,7 @@ function setupSendVerificationEmail(
   buttonId,
   successDivId,
   errorDivId,
+  emailInputId,
   cooldownSeconds = 30,
   redirectIfVerified = "/firebase/dashboard"
 ) {
@@ -195,39 +196,41 @@ function setupSendVerificationEmail(
       const button = document.getElementById(buttonId);
       const successMsg = document.getElementById(successDivId);
       const errorMsg = document.getElementById(errorDivId);
+      const emailInput = document.getElementById(emailInputId);
 
       if (!button) return;
 
       firebase.auth().onAuthStateChanged(function (user) {
         if (!user) return;
 
+        // Affiche l’email dans le champ input
+        if (emailInput) emailInput.value = user.email;
+
         button.addEventListener("click", async function () {
           if (successMsg) successMsg.style.display = "none";
           if (errorMsg) errorMsg.style.display = "none";
 
           try {
-            await user.reload(); // 🔄 Recharge infos actuelles
+            await user.reload(); // Met à jour infos
             const refreshedUser = firebase.auth().currentUser;
 
-            // ✅ Si l'email est déjà vérifié → redirection immédiate
-            if (
-              refreshedUser.emailVerified ||
-              refreshedUser.providerData[0].providerId !== "password"
-            ) {
-              window.location.href = redirectIfVerified;
+            // ✅ Email déjà vérifié
+            if (refreshedUser.emailVerified) {
+              successMsg.textContent = "Ton email est déjà vérifié ✅";
+              successMsg.style.display = "block";
+              setTimeout(() => {
+                window.location.href = redirectIfVerified;
+              }, 2000);
               return;
             }
 
-            // ❌ Email non vérifié → envoie du mail
+            // ❌ Email non vérifié → envoi
             await refreshedUser.sendEmailVerification();
 
-            if (successMsg) {
-              successMsg.textContent = "Email de vérification envoyé ! 📩";
-              successMsg.style.display = "block";
-              successMsg.style.color = "green";
-            }
+            successMsg.textContent = "Email de vérification envoyé ! 📩";
+            successMsg.style.display = "block";
 
-            // ⏳ Cooldown et blocage définitif du bouton
+            // ⏳ Cooldown (bloqué à vie ensuite)
             button.disabled = true;
             let remaining = cooldownSeconds;
             const originalText = button.textContent;
@@ -239,44 +242,25 @@ function setupSendVerificationEmail(
               if (remaining < 0) {
                 clearInterval(cooldownInterval);
                 button.textContent = "⏳ Vérifie ta boîte mail";
-                // Le bouton reste désactivé
               }
             }, 1000);
 
-            // 🔁 Polling de vérification toutes les 5s
-            const pollingInterval = setInterval(async () => {
-              const currentUser = firebase.auth().currentUser;
-              if (!currentUser) {
-                clearInterval(pollingInterval);
-                return;
-              }
+            // 🔁 Polling toutes les 5s
+            const polling = setInterval(async () => {
+              await refreshedUser.reload();
 
-              await currentUser.reload();
-
-              if (
-                currentUser.emailVerified ||
-                currentUser.providerData[0].providerId !== "password"
-              ) {
-                clearInterval(pollingInterval);
-
-                if (successMsg) {
-                  successMsg.textContent = "Email vérifié avec succès ✅";
-                  successMsg.style.display = "block";
-                  successMsg.style.color = "green";
-                }
-
+              if (refreshedUser.emailVerified) {
+                clearInterval(polling);
+                successMsg.textContent = "Email vérifié avec succès ✅";
+                successMsg.style.display = "block";
                 setTimeout(() => {
                   window.location.href = redirectIfVerified;
                 }, 1500);
               }
-            }, 5000); // ⏱️ toutes les 5 secondes
-
+            }, 5000);
           } catch (error) {
-            if (errorMsg) {
-              errorMsg.textContent = "Erreur : " + error.message;
-              errorMsg.style.display = "block";
-              errorMsg.style.color = "red";
-            }
+            errorMsg.textContent = "Erreur : " + error.message;
+            errorMsg.style.display = "block";
           }
         });
       });

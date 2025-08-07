@@ -206,26 +206,19 @@ function setupSendVerificationEmail(
           if (errorMsg) errorMsg.style.display = "none";
 
           try {
-            await user.reload(); // 🔄 recharge infos réelles
+            await user.reload(); // 🔄 Recharge infos actuelles
             const refreshedUser = firebase.auth().currentUser;
 
+            // ✅ Si l'email est déjà vérifié → redirection immédiate
             if (
               refreshedUser.emailVerified ||
               refreshedUser.providerData[0].providerId !== "password"
             ) {
-              if (successMsg) {
-                successMsg.textContent = "Ton email est déjà vérifié ✅";
-                successMsg.style.display = "block";
-                successMsg.style.color = "green";
-              }
-
-              setTimeout(() => {
-                window.location.href = redirectIfVerified;
-              }, 2000);
+              window.location.href = redirectIfVerified;
               return;
             }
 
-            // 🔁 Envoi d’un nouvel email de vérif
+            // ❌ Email non vérifié → envoie du mail
             await refreshedUser.sendEmailVerification();
 
             if (successMsg) {
@@ -234,7 +227,7 @@ function setupSendVerificationEmail(
               successMsg.style.color = "green";
             }
 
-            // ⏳ Cooldown
+            // ⏳ Cooldown et blocage définitif du bouton
             button.disabled = true;
             let remaining = cooldownSeconds;
             const originalText = button.textContent;
@@ -245,15 +238,14 @@ function setupSendVerificationEmail(
 
               if (remaining < 0) {
                 clearInterval(cooldownInterval);
-                button.textContent = originalText;
-                button.disabled = false;
+                button.textContent = "⏳ Vérifie ta boîte mail";
+                // Le bouton reste désactivé
               }
             }, 1000);
 
-            // 🔄 Vérifie toutes les 5 secondes si l'email est vérifié
+            // 🔁 Polling de vérification toutes les 5s
             const pollingInterval = setInterval(async () => {
               const currentUser = firebase.auth().currentUser;
-
               if (!currentUser) {
                 clearInterval(pollingInterval);
                 return;
@@ -278,6 +270,7 @@ function setupSendVerificationEmail(
                 }, 1500);
               }
             }, 5000); // ⏱️ toutes les 5 secondes
+
           } catch (error) {
             if (errorMsg) {
               errorMsg.textContent = "Erreur : " + error.message;

@@ -413,41 +413,6 @@ function setupSendVerificationEmail(
   });
 }
 
-
-
-// function setupCheckEmailVerifiedButton(buttonId, errorDivId, redirectOnVerified = "/firebase/dashboard") {
-//   document.addEventListener("DOMContentLoaded", function () {
-//     waitForFirebase(() => {
-//       const button = document.getElementById(buttonId);
-//       const errorMsg = document.getElementById(errorDivId);
-//       if (!button) return;
-
-//       button.addEventListener("click", () => {
-//         firebase.auth().onAuthStateChanged(async function (user) {
-//           if (!user) {
-//             window.location.href = "/firebase/login"; // Redirige si déconnecté
-//             return;
-//           }
-
-//           await user.reload(); // Rafraîchit les infos utilisateur
-
-//           if (user.emailVerified || user.providerData[0].providerId !== "password") {
-//             // ✅ Email vérifié → redirection
-//             window.location.href = redirectOnVerified;
-//           } else {
-//             // ❌ Toujours pas vérifié → message d'erreur
-//             if (errorMsg) {
-//               errorMsg.textContent = "Ton email n’est pas encore vérifié. Clique sur le lien dans l’email reçu.";
-//               errorMsg.style.display = "block";
-//               errorMsg.style.color = "red";
-//             }
-//           }
-//         });
-//       });
-//     });
-//   });
-// }
-
 // 🔑 Login & Signup avec Google
 function setupGoogleLogin(buttonId, redirectOnSuccess = "/firebase/dashboard") {
   document.addEventListener("DOMContentLoaded", function () {
@@ -494,6 +459,102 @@ function setupLogout(buttonId, redirectAfterLogout = "/") {
         });
     });
 }
+
+function setupForgotPassword(
+  buttonId,
+  successDivId,
+  errorDivId,
+  emailInputId,
+  cooldownSeconds = 30
+) {
+  document.addEventListener("DOMContentLoaded", function () {
+    waitForFirebase(() => {
+      const button = document.getElementById(buttonId);
+      const successMsg = document.getElementById(successDivId);
+      const errorMsg = document.getElementById(errorDivId);
+      const emailInput = document.getElementById(emailInputId);
+
+      if (!button || !emailInput) return;
+
+      let cooldownInterval = null;
+
+      button.addEventListener("click", async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        // 🔄 Reset messages
+        if (successMsg) {
+          successMsg.textContent = "";
+          successMsg.style.display = "none";
+        }
+        if (errorMsg) {
+          errorMsg.textContent = "";
+          errorMsg.style.display = "none";
+        }
+
+        const email = emailInput.value.trim();
+
+        if (!email) {
+          if (errorMsg) {
+            errorMsg.textContent = "Merci de renseigner ton email.";
+            errorMsg.style.display = "block";
+          }
+          return;
+        }
+
+        try {
+          // 📩 Envoie l'email de reset
+          console.log("📨 Sending password reset email...");
+          await firebase.auth().sendPasswordResetEmail(email);
+
+          if (successMsg) {
+            successMsg.textContent = "Un lien de réinitialisation a été envoyé ! 📩";
+            successMsg.style.display = "block";
+          }
+
+          // ⏳ Cooldown
+          button.disabled = true;
+          let remaining = parseInt(cooldownSeconds, 10) || 30;
+
+          const originalText = button.value || "Réinitialiser le mot de passe";
+          button.value = `Renvoyer dans ${remaining}s...`;
+          remaining--;
+
+          clearInterval(cooldownInterval);
+          cooldownInterval = setInterval(() => {
+            if (remaining <= 0) {
+              clearInterval(cooldownInterval);
+              button.disabled = false;
+              button.value = originalText;
+              return;
+            }
+
+            button.value = `Renvoyer dans ${remaining}s...`;
+            remaining--;
+          }, 1000);
+
+        } catch (error) {
+          console.error("💥 Erreur envoi reset :", error);
+          if (errorMsg) {
+            let msg = "Erreur : " + error.message;
+            if (error.code === "auth/user-not-found") {
+              msg = "Aucun compte trouvé avec cet email.";
+            } else if (error.code === "auth/invalid-email") {
+              msg = "Email invalide.";
+            }
+
+            errorMsg.textContent = msg;
+            errorMsg.style.display = "block";
+          }
+
+          button.disabled = false;
+          button.value = "Réessayer";
+        }
+      });
+    });
+  });
+}
+
 
 // ⏳ Utilitaire : attendre que Firebase soit prêt
 function waitForFirebase(callback) {
@@ -552,5 +613,6 @@ window.setupSendVerificationEmail = setupSendVerificationEmail;
 window.setupCheckEmailVerified = setupCheckEmailVerified;
 window.setupGoogleLogin = setupGoogleLogin;
 window.setupLogout = setupLogout;
+window.setupForgotPassword = setupForgotPassword;
 window.feedUserEmail = feedUserEmail;
 window.getUserInfo = getUserInfo;

@@ -186,65 +186,69 @@ function setupSignup(
 function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldownSeconds = 30, redirectIfVerified = "/firebase/dashboard") {
   document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
+      const button = document.getElementById(buttonId);
+      const successMsg = document.getElementById(successDivId);
+      const errorMsg = document.getElementById(errorDivId);
+
+      if (!button) return;
+
       firebase.auth().onAuthStateChanged(function (user) {
         if (!user) return;
 
-        const button = document.getElementById(buttonId);
-        const successMsg = document.getElementById(successDivId);
-        const errorMsg = document.getElementById(errorDivId);
-
-        if (!button) return;
-
-        button.addEventListener("click", function () {
+        button.addEventListener("click", async function () {
           if (successMsg) successMsg.style.display = "none";
           if (errorMsg) errorMsg.style.display = "none";
 
-          if (user.emailVerified || user.providerData[0].providerId !== "password") {
-            // ✅ Déjà vérifié → message + redirection
-            if (successMsg) {
-              successMsg.textContent = "Ton email est déjà vérifié ✅";
-              successMsg.style.display = "block";
-              successMsg.style.color = "green";
-            }
+          try {
+            await user.reload(); // 🔄 recharge les infos réelles du user
+            const refreshedUser = firebase.auth().currentUser;
 
-            setTimeout(() => {
-              window.location.href = redirectIfVerified;
-            }, 2000); // Laisse 2 sec pour voir le message
-            return;
-          }
-
-          // 🔁 Envoi d’un nouvel email
-          user.sendEmailVerification()
-            .then(() => {
+            if (refreshedUser.emailVerified || refreshedUser.providerData[0].providerId !== "password") {
+              // ✅ Déjà vérifié
               if (successMsg) {
-                successMsg.textContent = "Email de vérification envoyé ! 📩";
+                successMsg.textContent = "Ton email est déjà vérifié ✅";
                 successMsg.style.display = "block";
                 successMsg.style.color = "green";
               }
 
-              // 🕒 Cooldown
-              button.disabled = true;
-              let remaining = cooldownSeconds;
-              const originalText = button.textContent;
+              setTimeout(() => {
+                window.location.href = redirectIfVerified;
+              }, 2000);
+              return;
+            }
 
-              const interval = setInterval(() => {
-                button.textContent = `Renvoyer dans ${remaining}s...`;
-                remaining--;
+            // 🔁 Envoi d’un nouvel email
+            await refreshedUser.sendEmailVerification();
 
-                if (remaining < 0) {
-                  clearInterval(interval);
-                  button.textContent = originalText;
-                  button.disabled = false;
-                }
-              }, 1000);
-            })
-            .catch((error) => {
-              if (errorMsg) {
-                errorMsg.textContent = "Erreur : " + error.message;
-                errorMsg.style.display = "block";
-                errorMsg.style.color = "red";
+            if (successMsg) {
+              successMsg.textContent = "Email de vérification envoyé ! 📩";
+              successMsg.style.display = "block";
+              successMsg.style.color = "green";
+            }
+
+            // 🕒 Cooldown
+            button.disabled = true;
+            let remaining = cooldownSeconds;
+            const originalText = button.textContent;
+
+            const interval = setInterval(() => {
+              button.textContent = `Renvoyer dans ${remaining}s...`;
+              remaining--;
+
+              if (remaining < 0) {
+                clearInterval(interval);
+                button.textContent = originalText;
+                button.disabled = false;
               }
-            });
+            }, 1000);
+
+          } catch (error) {
+            if (errorMsg) {
+              errorMsg.textContent = "Erreur : " + error.message;
+              errorMsg.style.display = "block";
+              errorMsg.style.color = "red";
+            }
+          }
         });
       });
     });

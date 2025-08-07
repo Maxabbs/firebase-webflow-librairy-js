@@ -248,6 +248,7 @@ function setupSendVerificationEmail(
             let remaining = cooldownSeconds;
 
             button.textContent = `Renvoyer dans ${remaining}s...`;
+            console.log("⏳ Cooldown démarré :", button.textContent);
             remaining--;
 
             const cooldownInterval = setInterval(() => {
@@ -258,6 +259,7 @@ function setupSendVerificationEmail(
               }
 
               button.textContent = `Renvoyer dans ${remaining}s...`;
+              console.log("⏳ Cooldown update :", button.textContent);
               remaining--;
             }, 1000);
 

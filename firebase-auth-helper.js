@@ -251,35 +251,34 @@ function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldown
   });
 }
 
-function setupCheckEmailVerified(
-  buttonId,
-  errorDivId,
-  redirectOnVerified = "/firebase/dashboard"
-) {
+
+function setupCheckEmailVerifiedButton(buttonId, errorDivId, redirectOnVerified = "/firebase/dashboard") {
   document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
-      firebase.auth().onAuthStateChanged(function (user) {
-        if (!user) return;
+      const button = document.getElementById(buttonId);
+      const errorMsg = document.getElementById(errorDivId);
+      if (!button) return;
 
-        const button = document.getElementById(buttonId);
-        const errorMsg = document.getElementById(errorDivId);
+      button.addEventListener("click", () => {
+        firebase.auth().onAuthStateChanged(async function (user) {
+          if (!user) {
+            window.location.href = "/firebase/login"; // Redirige si déconnecté
+            return;
+          }
 
-        if (!button) return;
+          await user.reload(); // Rafraîchit les infos utilisateur
 
-        button.addEventListener("click", function () {
-          if (errorMsg) errorMsg.style.display = "none";
-
-          user.reload().then(() => {
-            if (user.emailVerified) {
-              window.location.href = redirectOnVerified;
-            } else {
-              if (errorMsg) {
-                errorMsg.textContent = "Ton email n’est pas encore vérifié. Clique sur le lien dans l’email reçu.";
-                errorMsg.style.display = "block";
-                errorMsg.style.color = "red";
-              }
+          if (user.emailVerified || user.providerData[0].providerId !== "password") {
+            // ✅ Email vérifié → redirection
+            window.location.href = redirectOnVerified;
+          } else {
+            // ❌ Toujours pas vérifié → message d'erreur
+            if (errorMsg) {
+              errorMsg.textContent = "Ton email n’est pas encore vérifié. Clique sur le lien dans l’email reçu.";
+              errorMsg.style.display = "block";
+              errorMsg.style.color = "red";
             }
-          });
+          }
         });
       });
     });

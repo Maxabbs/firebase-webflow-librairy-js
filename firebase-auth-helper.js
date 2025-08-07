@@ -241,17 +241,22 @@ function setupSendVerificationEmail(
               successMsg.style.display = "block";
             }
 
-            // ⏳ Cooldown bouton
+            // ⏳ Cooldown bouton avec affichage immédiat
             button.disabled = true;
-            const originalText = button.textContent;
             let remaining = cooldownSeconds;
 
+            button.textContent = `Renvoyer dans ${remaining}s...`;
+            remaining--;
+
             const cooldownInterval = setInterval(() => {
-              button.textContent = `Renvoyer dans ${remaining--}s...`;
-              if (remaining < 0) {
+              if (remaining <= 0) {
                 clearInterval(cooldownInterval);
                 button.textContent = "⏳ Vérifie ta boîte mail";
+                return;
               }
+
+              button.textContent = `Renvoyer dans ${remaining}s...`;
+              remaining--;
             }, 1000);
 
             // 🔁 Polling vérification

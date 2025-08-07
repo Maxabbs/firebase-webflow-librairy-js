@@ -183,6 +183,115 @@ function setupSignup(
 
 // setupSendVerificationEmailWithCooldown
 // ✉️ Envoi de l’email de vérification avec cooldown et redirection si déjà vérifié
+// function setupSendVerificationEmail(
+//   buttonId,
+//   successDivId,
+//   errorDivId,
+//   emailInputId,
+//   cooldownSeconds = 30,
+//   redirectIfVerified = "/firebase/dashboard"
+// ) {
+//   document.addEventListener("DOMContentLoaded", function () {
+//     waitForFirebase(() => {
+//       const button = document.getElementById(buttonId);
+//       const successMsg = document.getElementById(successDivId);
+//       const errorMsg = document.getElementById(errorDivId);
+//       const emailInput = document.getElementById(emailInputId);
+
+//       if (!button) return;
+
+//       firebase.auth().onAuthStateChanged(function (user) {
+//         if (!user) return;
+
+//         // Pré-remplit l’email
+//         if (emailInput) emailInput.value = user.email;
+
+//         button.addEventListener("click", async function (event) {
+//           event.preventDefault();
+//           event.stopPropagation();
+
+//           // 🔄 Reset messages
+//           if (successMsg) {
+//             successMsg.textContent = "";
+//             successMsg.style.display = "none";
+//           }
+//           if (errorMsg) {
+//             errorMsg.textContent = "";
+//             errorMsg.style.display = "none";
+//           }
+
+//           try {
+//             console.log("🔄 Reloading user...");
+//             await user.reload();
+//             const refreshedUser = firebase.auth().currentUser;
+
+//             // ✅ Déjà vérifié
+//             if (refreshedUser.emailVerified) {
+//               if (successMsg) {
+//                 successMsg.textContent = "Ton email est déjà vérifié ✅";
+//                 successMsg.style.display = "block";
+//               }
+//               setTimeout(() => window.location.href = redirectIfVerified, 2000);
+//               return;
+//             }
+
+//             // 📩 Envoie l'email de vérification
+//             console.log("📨 Sending verification email...");
+//             await refreshedUser.sendEmailVerification();
+
+//             if (successMsg) {
+//               successMsg.textContent = "Email de vérification envoyé ! 📩";
+//               successMsg.style.display = "block";
+//             }
+
+//             // ⏳ Cooldown bouton avec affichage immédiat (modif pour input[type=submit])
+//             button.disabled = true;
+//             let remaining = parseInt(cooldownSeconds, 10) || 30;
+
+//             button.value = `Renvoyer dans ${remaining}s...`;
+//             remaining--;
+
+//             const cooldownInterval = setInterval(() => {
+//               if (remaining <= 0) {
+//                 clearInterval(cooldownInterval);
+//                 button.value = "⏳ Vérifie ta boîte mail";
+//                 return;
+//               }
+
+//               button.value = `Renvoyer dans ${remaining}s...`;
+//               remaining--;
+//             }, 1000);
+
+//             // 🔁 Polling vérification
+//             const polling = setInterval(async () => {
+//               try {
+//                 await refreshedUser.reload();
+//                 if (refreshedUser.emailVerified) {
+//                   clearInterval(polling);
+//                   if (successMsg) {
+//                     successMsg.textContent = "Email vérifié avec succès ✅";
+//                     successMsg.style.display = "block";
+//                   }
+//                   setTimeout(() => window.location.href = redirectIfVerified, 1500);
+//                 }
+//               } catch (pollError) {
+//                 console.error("Erreur pendant le polling :", pollError);
+//               }
+//             }, 5000);
+
+//           } catch (error) {
+//             console.error("💥 Erreur lors de l'envoi :", error);
+//             if (errorMsg) {
+//               errorMsg.textContent = "Erreur : " + error.message;
+//               errorMsg.style.display = "block";
+//             }
+//           }
+//         });
+//       });
+//     });
+//   });
+// }
+
 function setupSendVerificationEmail(
   buttonId,
   successDivId,
@@ -206,11 +315,14 @@ function setupSendVerificationEmail(
         // Pré-remplit l’email
         if (emailInput) emailInput.value = user.email;
 
+        let cooldownInterval = null;
+        let pollingInterval = null;
+
         button.addEventListener("click", async function (event) {
           event.preventDefault();
           event.stopPropagation();
 
-          // 🔄 Reset messages
+          // Reset messages
           if (successMsg) {
             successMsg.textContent = "";
             successMsg.style.display = "none";
@@ -225,7 +337,7 @@ function setupSendVerificationEmail(
             await user.reload();
             const refreshedUser = firebase.auth().currentUser;
 
-            // ✅ Déjà vérifié
+            // Si déjà vérifié, redirige
             if (refreshedUser.emailVerified) {
               if (successMsg) {
                 successMsg.textContent = "Ton email est déjà vérifié ✅";
@@ -235,7 +347,7 @@ function setupSendVerificationEmail(
               return;
             }
 
-            // 📩 Envoie l'email de vérification
+            // Envoie l'email de vérification
             console.log("📨 Sending verification email...");
             await refreshedUser.sendEmailVerification();
 
@@ -244,30 +356,37 @@ function setupSendVerificationEmail(
               successMsg.style.display = "block";
             }
 
-            // ⏳ Cooldown bouton avec affichage immédiat (modif pour input[type=submit])
+            // Cooldown : désactive le bouton et affiche le timer
             button.disabled = true;
             let remaining = parseInt(cooldownSeconds, 10) || 30;
 
+            const originalText = button.value || "Envoyer l'email de vérification";
             button.value = `Renvoyer dans ${remaining}s...`;
             remaining--;
 
-            const cooldownInterval = setInterval(() => {
+            clearInterval(cooldownInterval);
+            cooldownInterval = setInterval(() => {
               if (remaining <= 0) {
                 clearInterval(cooldownInterval);
-                button.value = "⏳ Vérifie ta boîte mail";
+                button.disabled = false;
+                button.value = originalText; // Remet le texte d’origine
                 return;
               }
-
               button.value = `Renvoyer dans ${remaining}s...`;
               remaining--;
             }, 1000);
 
-            // 🔁 Polling vérification
-            const polling = setInterval(async () => {
+            // Polling toutes les 5s pour vérifier si l’email est validé
+            clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
               try {
                 await refreshedUser.reload();
                 if (refreshedUser.emailVerified) {
-                  clearInterval(polling);
+                  clearInterval(pollingInterval);
+                  clearInterval(cooldownInterval);
+                  button.disabled = false;
+                  button.value = originalText;
+
                   if (successMsg) {
                     successMsg.textContent = "Email vérifié avec succès ✅";
                     successMsg.style.display = "block";
@@ -285,12 +404,15 @@ function setupSendVerificationEmail(
               errorMsg.textContent = "Erreur : " + error.message;
               errorMsg.style.display = "block";
             }
+            button.disabled = false;
+            button.value = "Réessayer";
           }
         });
       });
     });
   });
 }
+
 
 
 // function setupCheckEmailVerifiedButton(buttonId, errorDivId, redirectOnVerified = "/firebase/dashboard") {

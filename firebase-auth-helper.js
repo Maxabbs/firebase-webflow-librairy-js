@@ -209,6 +209,7 @@ function setupSendVerificationEmail(
         button.addEventListener("click", async function (event) {
           event.preventDefault();
           event.stopPropagation();
+
           // 🔄 Reset messages
           if (successMsg) {
             successMsg.textContent = "";
@@ -243,23 +244,21 @@ function setupSendVerificationEmail(
               successMsg.style.display = "block";
             }
 
-            // ⏳ Cooldown bouton avec affichage immédiat
+            // ⏳ Cooldown bouton avec affichage immédiat (modif pour input[type=submit])
             button.disabled = true;
             let remaining = cooldownSeconds;
 
-            button.textContent = `Renvoyer dans ${remaining}s...`;
-            console.log("⏳ Cooldown démarré :", button.textContent);
+            button.value = `Renvoyer dans ${remaining}s...`;
             remaining--;
 
             const cooldownInterval = setInterval(() => {
               if (remaining <= 0) {
                 clearInterval(cooldownInterval);
-                button.textContent = "⏳ Vérifie ta boîte mail";
+                button.value = "⏳ Vérifie ta boîte mail";
                 return;
               }
 
-              button.textContent = `Renvoyer dans ${remaining}s...`;
-              console.log("⏳ Cooldown update :", button.textContent);
+              button.value = `Renvoyer dans ${remaining}s...`;
               remaining--;
             }, 1000);
 

@@ -206,7 +206,9 @@ function setupSendVerificationEmail(
         // Pré-remplit l’email
         if (emailInput) emailInput.value = user.email;
 
-        button.addEventListener("click", async function () {
+        button.addEventListener("click", async function (event) {
+          event.preventDefault();
+          event.stopPropagation();
           // 🔄 Reset messages
           if (successMsg) {
             successMsg.textContent = "";

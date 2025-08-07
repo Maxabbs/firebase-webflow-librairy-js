@@ -246,7 +246,7 @@ function setupSendVerificationEmail(
 
             // ⏳ Cooldown bouton avec affichage immédiat (modif pour input[type=submit])
             button.disabled = true;
-            let remaining = cooldownSeconds;
+            let remaining = parseInt(cooldownSeconds, 10) || 30;
 
             button.value = `Renvoyer dans ${remaining}s...`;
             remaining--;

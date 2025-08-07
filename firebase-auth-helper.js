@@ -292,38 +292,38 @@ function setupSendVerificationEmail(
 }
 
 
-function setupCheckEmailVerifiedButton(buttonId, errorDivId, redirectOnVerified = "/firebase/dashboard") {
-  document.addEventListener("DOMContentLoaded", function () {
-    waitForFirebase(() => {
-      const button = document.getElementById(buttonId);
-      const errorMsg = document.getElementById(errorDivId);
-      if (!button) return;
+// function setupCheckEmailVerifiedButton(buttonId, errorDivId, redirectOnVerified = "/firebase/dashboard") {
+//   document.addEventListener("DOMContentLoaded", function () {
+//     waitForFirebase(() => {
+//       const button = document.getElementById(buttonId);
+//       const errorMsg = document.getElementById(errorDivId);
+//       if (!button) return;
 
-      button.addEventListener("click", () => {
-        firebase.auth().onAuthStateChanged(async function (user) {
-          if (!user) {
-            window.location.href = "/firebase/login"; // Redirige si déconnecté
-            return;
-          }
+//       button.addEventListener("click", () => {
+//         firebase.auth().onAuthStateChanged(async function (user) {
+//           if (!user) {
+//             window.location.href = "/firebase/login"; // Redirige si déconnecté
+//             return;
+//           }
 
-          await user.reload(); // Rafraîchit les infos utilisateur
+//           await user.reload(); // Rafraîchit les infos utilisateur
 
-          if (user.emailVerified || user.providerData[0].providerId !== "password") {
-            // ✅ Email vérifié → redirection
-            window.location.href = redirectOnVerified;
-          } else {
-            // ❌ Toujours pas vérifié → message d'erreur
-            if (errorMsg) {
-              errorMsg.textContent = "Ton email n’est pas encore vérifié. Clique sur le lien dans l’email reçu.";
-              errorMsg.style.display = "block";
-              errorMsg.style.color = "red";
-            }
-          }
-        });
-      });
-    });
-  });
-}
+//           if (user.emailVerified || user.providerData[0].providerId !== "password") {
+//             // ✅ Email vérifié → redirection
+//             window.location.href = redirectOnVerified;
+//           } else {
+//             // ❌ Toujours pas vérifié → message d'erreur
+//             if (errorMsg) {
+//               errorMsg.textContent = "Ton email n’est pas encore vérifié. Clique sur le lien dans l’email reçu.";
+//               errorMsg.style.display = "block";
+//               errorMsg.style.color = "red";
+//             }
+//           }
+//         });
+//       });
+//     });
+//   });
+// }
 
 // 🔑 Login & Signup avec Google
 function setupGoogleLogin(buttonId, redirectOnSuccess = "/firebase/dashboard") {

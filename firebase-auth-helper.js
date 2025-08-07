@@ -203,64 +203,80 @@ function setupSendVerificationEmail(
       firebase.auth().onAuthStateChanged(function (user) {
         if (!user) return;
 
-        // Affiche l’email dans le champ input
+        // Pré-remplit l’email
         if (emailInput) emailInput.value = user.email;
 
         button.addEventListener("click", async function () {
-          if (successMsg) successMsg.style.display = "none";
-          if (errorMsg) errorMsg.style.display = "none";
+          // 🔄 Reset messages
+          if (successMsg) {
+            successMsg.textContent = "";
+            successMsg.style.display = "none";
+          }
+          if (errorMsg) {
+            errorMsg.textContent = "";
+            errorMsg.style.display = "none";
+          }
 
           try {
-            await user.reload(); // Met à jour infos
+            console.log("🔄 Reloading user...");
+            await user.reload();
             const refreshedUser = firebase.auth().currentUser;
 
-            // ✅ Email déjà vérifié
+            // ✅ Déjà vérifié
             if (refreshedUser.emailVerified) {
-              successMsg.textContent = "Ton email est déjà vérifié ✅";
-              successMsg.style.display = "block";
-              setTimeout(() => {
-                window.location.href = redirectIfVerified;
-              }, 2000);
+              if (successMsg) {
+                successMsg.textContent = "Ton email est déjà vérifié ✅";
+                successMsg.style.display = "block";
+              }
+              setTimeout(() => window.location.href = redirectIfVerified, 2000);
               return;
             }
 
-            // ❌ Email non vérifié → envoi
+            // 📩 Envoie l'email de vérification
+            console.log("📨 Sending verification email...");
             await refreshedUser.sendEmailVerification();
 
-            successMsg.textContent = "Email de vérification envoyé ! 📩";
-            successMsg.style.display = "block";
+            if (successMsg) {
+              successMsg.textContent = "Email de vérification envoyé ! 📩";
+              successMsg.style.display = "block";
+            }
 
-            // ⏳ Cooldown (bloqué à vie ensuite)
+            // ⏳ Cooldown bouton
             button.disabled = true;
-            let remaining = cooldownSeconds;
             const originalText = button.textContent;
+            let remaining = cooldownSeconds;
 
             const cooldownInterval = setInterval(() => {
-              button.textContent = `Renvoyer dans ${remaining}s...`;
-              remaining--;
-
+              button.textContent = `Renvoyer dans ${remaining--}s...`;
               if (remaining < 0) {
                 clearInterval(cooldownInterval);
                 button.textContent = "⏳ Vérifie ta boîte mail";
               }
             }, 1000);
 
-            // 🔁 Polling toutes les 5s
+            // 🔁 Polling vérification
             const polling = setInterval(async () => {
-              await refreshedUser.reload();
-
-              if (refreshedUser.emailVerified) {
-                clearInterval(polling);
-                successMsg.textContent = "Email vérifié avec succès ✅";
-                successMsg.style.display = "block";
-                setTimeout(() => {
-                  window.location.href = redirectIfVerified;
-                }, 1500);
+              try {
+                await refreshedUser.reload();
+                if (refreshedUser.emailVerified) {
+                  clearInterval(polling);
+                  if (successMsg) {
+                    successMsg.textContent = "Email vérifié avec succès ✅";
+                    successMsg.style.display = "block";
+                  }
+                  setTimeout(() => window.location.href = redirectIfVerified, 1500);
+                }
+              } catch (pollError) {
+                console.error("Erreur pendant le polling :", pollError);
               }
             }, 5000);
+
           } catch (error) {
-            errorMsg.textContent = "Erreur : " + error.message;
-            errorMsg.style.display = "block";
+            console.error("💥 Erreur lors de l'envoi :", error);
+            if (errorMsg) {
+              errorMsg.textContent = "Erreur : " + error.message;
+              errorMsg.style.display = "block";
+            }
           }
         });
       });

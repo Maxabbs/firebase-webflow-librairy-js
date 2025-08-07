@@ -183,7 +183,13 @@ function setupSignup(
 
 // setupSendVerificationEmailWithCooldown
 // ✉️ Envoi de l’email de vérification avec cooldown et redirection si déjà vérifié
-function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldownSeconds = 30, redirectIfVerified = "/firebase/dashboard") {
+function setupSendVerificationEmail(
+  buttonId,
+  successDivId,
+  errorDivId,
+  cooldownSeconds = 30,
+  redirectIfVerified = "/firebase/dashboard"
+) {
   document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
       const button = document.getElementById(buttonId);
@@ -200,11 +206,13 @@ function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldown
           if (errorMsg) errorMsg.style.display = "none";
 
           try {
-            await user.reload(); // 🔄 recharge les infos réelles du user
+            await user.reload(); // 🔄 recharge infos réelles
             const refreshedUser = firebase.auth().currentUser;
 
-            if (refreshedUser.emailVerified || refreshedUser.providerData[0].providerId !== "password") {
-              // ✅ Déjà vérifié
+            if (
+              refreshedUser.emailVerified ||
+              refreshedUser.providerData[0].providerId !== "password"
+            ) {
               if (successMsg) {
                 successMsg.textContent = "Ton email est déjà vérifié ✅";
                 successMsg.style.display = "block";
@@ -217,7 +225,7 @@ function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldown
               return;
             }
 
-            // 🔁 Envoi d’un nouvel email
+            // 🔁 Envoi d’un nouvel email de vérif
             await refreshedUser.sendEmailVerification();
 
             if (successMsg) {
@@ -226,22 +234,50 @@ function setupSendVerificationEmail(buttonId, successDivId, errorDivId, cooldown
               successMsg.style.color = "green";
             }
 
-            // 🕒 Cooldown
+            // ⏳ Cooldown
             button.disabled = true;
             let remaining = cooldownSeconds;
             const originalText = button.textContent;
 
-            const interval = setInterval(() => {
+            const cooldownInterval = setInterval(() => {
               button.textContent = `Renvoyer dans ${remaining}s...`;
               remaining--;
 
               if (remaining < 0) {
-                clearInterval(interval);
+                clearInterval(cooldownInterval);
                 button.textContent = originalText;
                 button.disabled = false;
               }
             }, 1000);
 
+            // 🔄 Vérifie toutes les 5 secondes si l'email est vérifié
+            const pollingInterval = setInterval(async () => {
+              const currentUser = firebase.auth().currentUser;
+
+              if (!currentUser) {
+                clearInterval(pollingInterval);
+                return;
+              }
+
+              await currentUser.reload();
+
+              if (
+                currentUser.emailVerified ||
+                currentUser.providerData[0].providerId !== "password"
+              ) {
+                clearInterval(pollingInterval);
+
+                if (successMsg) {
+                  successMsg.textContent = "Email vérifié avec succès ✅";
+                  successMsg.style.display = "block";
+                  successMsg.style.color = "green";
+                }
+
+                setTimeout(() => {
+                  window.location.href = redirectIfVerified;
+                }, 1500);
+              }
+            }, 5000); // ⏱️ toutes les 5 secondes
           } catch (error) {
             if (errorMsg) {
               errorMsg.textContent = "Erreur : " + error.message;

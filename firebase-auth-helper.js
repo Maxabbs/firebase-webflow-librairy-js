@@ -64,53 +64,62 @@ function setupLogin(
   redirectOnSuccess = "/firebase/dashboard"
 ) {
   document.addEventListener("DOMContentLoaded", function () {
-    firebase.auth().onAuthStateChanged(function(user) {
-      if (user) {
-        window.location.href = redirectOnSuccess;
-        return; // on stoppe toute suite si connecté
-      }
+    waitForFirebase(() => {
+      firebase.auth().onAuthStateChanged(function(user) {
+        console.log("[setupLogin] onAuthStateChanged triggered, user =", user);
+        if (user) {
+          console.log("[setupLogin] User is connected, redirecting...");
+          window.location.href = redirectOnSuccess;
+          return;
+        }
+        console.log("[setupLogin] No user connected, setting up login form");
 
-      const emailInput = document.getElementById(emailId);
-      const passwordInput = document.getElementById(passwordId);
-      const loginButton = document.getElementById(buttonId);
-      const successMessage = document.getElementById(successDivId);
-      const errorMessage = document.getElementById(errorDivId);
+        const emailInput = document.getElementById(emailId);
+        const passwordInput = document.getElementById(passwordId);
+        const loginButton = document.getElementById(buttonId);
+        const successMessage = document.getElementById(successDivId);
+        const errorMessage = document.getElementById(errorDivId);
 
-      if (!emailInput || !passwordInput || !loginButton) return;
+        if (!emailInput || !passwordInput || !loginButton) {
+          console.error("[setupLogin] Un élément du formulaire est manquant");
+          return;
+        }
 
-      loginButton.addEventListener("click", function (e) {
-        e.preventDefault();
+        loginButton.addEventListener("click", function (e) {
+          e.preventDefault();
 
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
+          const email = emailInput.value.trim();
+          const password = passwordInput.value;
 
-        // Reset messages
-        if (successMessage) successMessage.style.display = "none";
-        if (errorMessage) errorMessage.style.display = "none";
+          // Reset messages
+          if (successMessage) successMessage.style.display = "none";
+          if (errorMessage) errorMessage.style.display = "none";
 
-        firebase.auth().signInWithEmailAndPassword(email, password)
-          .then((userCredential) => {
-            if (successMessage) {
-              successMessage.textContent = "Connexion réussie !";
-              successMessage.style.display = "block";
-              successMessage.style.color = "green";
-            }
+          firebase.auth().signInWithEmailAndPassword(email, password)
+            .then((userCredential) => {
+              if (successMessage) {
+                successMessage.textContent = "Connexion réussie !";
+                successMessage.style.display = "block";
+                successMessage.style.color = "green";
+              }
 
-            window.location.href = redirectOnSuccess;
-          })
-          .catch(() => {
-            if (errorMessage) {
-              errorMessage.textContent = "L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.";
-              errorMessage.style.display = "block";
-              errorMessage.style.color = "red";
-            } else {
-              alert("L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.");
-            }
-          });
+              window.location.href = redirectOnSuccess;
+            })
+            .catch(() => {
+              if (errorMessage) {
+                errorMessage.textContent = "L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.";
+                errorMessage.style.display = "block";
+                errorMessage.style.color = "red";
+              } else {
+                alert("L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.");
+              }
+            });
+        });
       });
-    }); // fin onAuthStateChanged
-  }); // fin DOMContentLoaded
+    });
+  });
 }
+
 
 // ✍️ Inscription Email & Mot de passe (avec vérification mot de passe identique + longueur mini)
 function setupSignup(

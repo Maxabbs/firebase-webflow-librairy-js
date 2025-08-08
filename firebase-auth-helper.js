@@ -64,45 +64,52 @@ function setupLogin(
   redirectOnSuccess = "/firebase/dashboard"
 ) {
   document.addEventListener("DOMContentLoaded", function () {
-    const emailInput = document.getElementById(emailId);
-    const passwordInput = document.getElementById(passwordId);
-    const loginButton = document.getElementById(buttonId);
-    const successMessage = document.getElementById(successDivId);
-    const errorMessage = document.getElementById(errorDivId);
+    firebase.auth().onAuthStateChanged(function(user) {
+      if (user) {
+        window.location.href = redirectOnSuccess;
+        return; // on stoppe toute suite si connecté
+      }
 
-    if (!emailInput || !passwordInput || !loginButton) return;
+      const emailInput = document.getElementById(emailId);
+      const passwordInput = document.getElementById(passwordId);
+      const loginButton = document.getElementById(buttonId);
+      const successMessage = document.getElementById(successDivId);
+      const errorMessage = document.getElementById(errorDivId);
 
-    loginButton.addEventListener("click", function (e) {
-      e.preventDefault();
+      if (!emailInput || !passwordInput || !loginButton) return;
 
-      const email = emailInput.value.trim();
-      const password = passwordInput.value;
+      loginButton.addEventListener("click", function (e) {
+        e.preventDefault();
 
-      // Reset messages
-      if (successMessage) successMessage.style.display = "none";
-      if (errorMessage) errorMessage.style.display = "none";
+        const email = emailInput.value.trim();
+        const password = passwordInput.value;
 
-      firebase.auth().signInWithEmailAndPassword(email, password)
-        .then((userCredential) => {
-          if (successMessage) {
-            successMessage.textContent = "Connexion réussie !";
-            successMessage.style.display = "block";
-            successMessage.style.color = "green";
-          }
+        // Reset messages
+        if (successMessage) successMessage.style.display = "none";
+        if (errorMessage) errorMessage.style.display = "none";
 
-          window.location.href = redirectOnSuccess;
-        })
-        .catch(() => {
-          if (errorMessage) {
-            errorMessage.textContent = "L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.";
-            errorMessage.style.display = "block";
-            errorMessage.style.color = "red";
-          } else {
-            alert("L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.");
-          }
-        });
-    });
-  });
+        firebase.auth().signInWithEmailAndPassword(email, password)
+          .then((userCredential) => {
+            if (successMessage) {
+              successMessage.textContent = "Connexion réussie !";
+              successMessage.style.display = "block";
+              successMessage.style.color = "green";
+            }
+
+            window.location.href = redirectOnSuccess;
+          })
+          .catch(() => {
+            if (errorMessage) {
+              errorMessage.textContent = "L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.";
+              errorMessage.style.display = "block";
+              errorMessage.style.color = "red";
+            } else {
+              alert("L'email ou le mot de passe est incorrect, ou votre compte est lié à une connexion Google.");
+            }
+          });
+      });
+    }); // fin onAuthStateChanged
+  }); // fin DOMContentLoaded
 }
 
 // ✍️ Inscription Email & Mot de passe (avec vérification mot de passe identique + longueur mini)

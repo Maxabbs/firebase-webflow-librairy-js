@@ -553,17 +553,6 @@ function feedUserEmail(emailId) {
     firebase.auth().onAuthStateChanged(function (user) {
       if (!user) return;
 
-      const emailEl = document.getElementById(emailId);
-      if (emailEl) emailEl.textContent = user.email;
-      });
-  });
-}
-
-function feedUserEmailInput(emailId) {
-  document.addEventListener("DOMContentLoaded", function () {
-    firebase.auth().onAuthStateChanged(function (user) {
-      if (!user) return;
-
       const el = document.getElementById(emailId);
       if (!el) return;
 

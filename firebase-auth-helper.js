@@ -708,7 +708,59 @@ function setupDisplayNameSave(saveBtnId, inputId, successDivId, errorDivId) {
   });
 }
 
+function setupStripeButtonsWithFirebaseAuth(buttonClass, loginRedirect, verifyEmailRedirect) {
+  const stripeLinks = {
+    "drinks-stripe-link": "https://pay.parazar.co/b/14A5kCaxb358aAz7Qc8AE0f",
+    "comedy-club-stripe-link": "https://pay.parazar.co/b/9B6cN4fRvcFI2437Qc8AE0g",
+    "drinks-pack-stripe-link": "https://pay.parazar.co/b/6oE7um5zxehB8jCbIM",
+    "discovery-pack-stripe-link": "https://pay.parazar.co/b/eVa4ia9PN4H10RabIL",
+    "parazar-monthly-unlimited-stripe-link": "https://pay.parazar.co/b/aEU15Y1jhc9t2Zi8wF"
+  };
 
+  waitForFirebase(() => {
+    const buttons = document.querySelectorAll(`.${buttonClass}`);
+
+    if (buttons.length === 0) {
+      console.warn(`[setupStripeButtons] Aucun bouton trouvé avec la classe '${buttonClass}'.`);
+      return;
+    }
+
+    buttons.forEach(button => {
+      button.addEventListener("click", async (e) => {
+        e.preventDefault();
+
+        const user = firebase.auth().currentUser;
+
+        if (!user) {
+          window.location.href = loginRedirect;
+          return;
+        }
+
+        const isEmailPasswordUser = user.providerData.some(p => p.providerId === "password");
+        if (isEmailPasswordUser && !user.emailVerified) {
+          window.location.href = verifyEmailRedirect;
+          return;
+        }
+
+        const email = user.email ? encodeURIComponent(user.email) : null;
+        if (!email) {
+          console.error("[setupStripeButtons] Utilisateur connecté sans email valide.");
+          return;
+        }
+
+        const btnId = e.currentTarget.id;
+        const redirectUrl = stripeLinks[btnId];
+
+        if (!redirectUrl) {
+          console.error("[setupStripeButtons] Pas de lien Stripe configuré pour ce bouton :", btnId);
+          return;
+        }
+
+        window.location.href = `${redirectUrl}?prefilled_email=${email}`;
+      });
+    });
+  });
+}
 
 
 // 📦 Exposer les fonctions globalement
@@ -726,3 +778,4 @@ window.setupForgotPassword = setupForgotPassword;
 window.feedUserEmail = feedUserEmail;
 window.feedUserProfilInfo = feedUserProfilInfo;
 window.setupDisplayNameSave = setupDisplayNameSave;
+window.setupStripeButtonsWithFirebaseAuth = setupStripeButtonsWithFirebaseAuth;

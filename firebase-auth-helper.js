@@ -596,6 +596,73 @@ function feedUserProfilInfo(emailId, displayNameId) {
   });
 }
 
+function setupDisplayNameSave(saveBtnId, inputId, successDivId, errorDivId) {
+  document.addEventListener("DOMContentLoaded", () => {
+    const saveBtn = document.getElementById(saveBtnId);
+    const input = document.getElementById(inputId);
+    const successMsg = document.getElementById(successDivId);
+    const errorMsg = document.getElementById(errorDivId);
+
+    if (!saveBtn || !input) {
+      console.error("Bouton save ou input non trouvés");
+      return;
+    }
+
+    saveBtn.addEventListener("click", async (e) => {
+      e.preventDefault();
+
+      if (!firebase.auth().currentUser) {
+        showError("Utilisateur non connecté.");
+        return;
+      }
+
+      const newDisplayName = input.value.trim();
+      const currentDisplayName = firebase.auth().currentUser.displayName || "";
+
+      clearMessages();
+
+      if (newDisplayName === "") {
+        showError("Le nom d'affichage ne peut pas être vide.");
+        return;
+      }
+      if (newDisplayName === currentDisplayName) {
+        showError("Le nom d'affichage n'a pas changé.");
+        return;
+      }
+
+      try {
+        await firebase.auth().currentUser.updateProfile({ displayName: newDisplayName });
+        showSuccess("Nom d'affichage mis à jour avec succès !");
+      } catch (error) {
+        console.error("Erreur mise à jour displayName:", error);
+        showError("Erreur lors de la mise à jour. Réessaie plus tard.");
+      }
+    });
+
+    function showSuccess(msg) {
+      if (successMsg) {
+        successMsg.textContent = msg;
+        successMsg.style.color = "green";
+        successMsg.style.display = "block";
+      }
+      if (errorMsg) errorMsg.style.display = "none";
+    }
+    function showError(msg) {
+      if (errorMsg) {
+        errorMsg.textContent = msg;
+        errorMsg.style.color = "red";
+        errorMsg.style.display = "block";
+      }
+      if (successMsg) successMsg.style.display = "none";
+    }
+    function clearMessages() {
+      if (successMsg) successMsg.style.display = "none";
+      if (errorMsg) errorMsg.style.display = "none";
+    }
+  });
+}
+
+
 
 // 📦 Exposer les fonctions globalement
 window.initFirebase = initFirebase;
@@ -610,3 +677,4 @@ window.setupLogout = setupLogout;
 window.setupForgotPassword = setupForgotPassword;
 window.feedUserEmail = feedUserEmail;
 window.feedUserProfilInfo = feedUserProfilInfo;
+window.setupDisplayNameSave = setupDisplayNameSave;

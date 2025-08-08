@@ -715,6 +715,7 @@ function setupDisplayNameSave(saveBtnId, inputId, successDivId, errorDivId) {
 window.initFirebase = initFirebase;
 window.requireAuth = requireAuth;
 window.requireEmailVerified = requireEmailVerified;
+window.requireEmailVerifiedOnClick = requireEmailVerifiedOnClick;
 window.setupLogin = setupLogin;
 window.setupSignup = setupSignup;
 window.setupSendVerificationEmail = setupSendVerificationEmail;

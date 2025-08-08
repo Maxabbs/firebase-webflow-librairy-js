@@ -559,6 +559,25 @@ function feedUserEmail(emailId) {
   });
 }
 
+function feedUserEmailInput(emailId) {
+  document.addEventListener("DOMContentLoaded", function () {
+    firebase.auth().onAuthStateChanged(function (user) {
+      if (!user) return;
+
+      const el = document.getElementById(emailId);
+      if (!el) return;
+
+      const email = user.email || "";
+
+      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
+        el.value = email;
+      } else {
+        el.textContent = email;
+      }
+    });
+  });
+}
+
 // Fonction pour récupérer le displayName
 function getUserDisplayName() {
   const user = firebase.auth().currentUser;

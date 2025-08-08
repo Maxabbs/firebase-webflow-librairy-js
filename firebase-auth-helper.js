@@ -549,7 +549,6 @@ function setupForgotPassword(
 }
 
 
-
 // ⏳ Utilitaire : attendre que Firebase soit prêt
 function waitForFirebase(callback) {
     if (typeof firebase !== "undefined" && firebase.auth) {
@@ -564,42 +563,35 @@ function getUserEmail() {
   return user ? user.email : null;
 }
 
+
+function fillElementById(id, value) {
+  const el = document.getElementById(id);
+  if (!el) {
+    console.warn(`[fillElementById] Élément avec l'id "${id}" non trouvé.`);
+    return;
+  }
+  if (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable) {
+    el.value = value;
+  } else {
+    el.textContent = value;
+  }
+}
+
 function feedUserEmail(emailId) {
   document.addEventListener("DOMContentLoaded", function () {
     firebase.auth().onAuthStateChanged(function (user) {
       if (!user) return;
-
-      const el = document.getElementById(emailId);
-      if (!el) return;
-
-      const email = user.email || "";
-
-      if (el.tagName === "INPUT" || el.tagName === "TEXTAREA") {
-        el.value = email;
-      } else {
-        el.textContent = email;
-      }
+      fillElementById(emailId, user.email || "");
     });
   });
 }
 
-// Fonction pour récupérer le displayName
-function getUserDisplayName() {
-  const user = firebase.auth().currentUser;
-  return user ? user.displayName : null;
-}
-
-// Fonction pour injecter les infos dans des input text
-function getUserInfo(emailId, displayNameId) {
+function feedUserProfilInfo(emailId, displayNameId) {
   document.addEventListener("DOMContentLoaded", function () {
     firebase.auth().onAuthStateChanged(function (user) {
       if (!user) return;
-
-      const emailEl = document.getElementById(emailId);
-      const displayNameEl = document.getElementById(displayNameId);
-
-      if (emailEl) emailEl.textContent = user.email;
-      if (displayNameEl) displayNameEl.textContent = user.displayName || "";
+      fillElementById(emailId, user.email || "");
+      fillElementById(displayNameId, user.displayName || "");
     });
   });
 }
@@ -617,4 +609,4 @@ window.setupGoogleLogin = setupGoogleLogin;
 window.setupLogout = setupLogout;
 window.setupForgotPassword = setupForgotPassword;
 window.feedUserEmail = feedUserEmail;
-window.getUserInfo = getUserInfo;
+window.feedUserProfilInfo = feedUserProfilInfo;

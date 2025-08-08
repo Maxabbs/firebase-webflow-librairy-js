@@ -181,117 +181,6 @@ function setupSignup(
   });
 }
 
-// setupSendVerificationEmailWithCooldown
-// ✉️ Envoi de l’email de vérification avec cooldown et redirection si déjà vérifié
-// function setupSendVerificationEmail(
-//   buttonId,
-//   successDivId,
-//   errorDivId,
-//   emailInputId,
-//   cooldownSeconds = 30,
-//   redirectIfVerified = "/firebase/dashboard"
-// ) {
-//   document.addEventListener("DOMContentLoaded", function () {
-//     waitForFirebase(() => {
-//       const button = document.getElementById(buttonId);
-//       const successMsg = document.getElementById(successDivId);
-//       const errorMsg = document.getElementById(errorDivId);
-//       const emailInput = document.getElementById(emailInputId);
-
-//       if (!button) return;
-
-//       firebase.auth().onAuthStateChanged(function (user) {
-//         if (!user) return;
-
-//         // Pré-remplit l’email
-//         if (emailInput) emailInput.value = user.email;
-
-//         button.addEventListener("click", async function (event) {
-//           event.preventDefault();
-//           event.stopPropagation();
-
-//           // 🔄 Reset messages
-//           if (successMsg) {
-//             successMsg.textContent = "";
-//             successMsg.style.display = "none";
-//           }
-//           if (errorMsg) {
-//             errorMsg.textContent = "";
-//             errorMsg.style.display = "none";
-//           }
-
-//           try {
-//             console.log("🔄 Reloading user...");
-//             await user.reload();
-//             const refreshedUser = firebase.auth().currentUser;
-
-//             // ✅ Déjà vérifié
-//             if (refreshedUser.emailVerified) {
-//               if (successMsg) {
-//                 successMsg.textContent = "Ton email est déjà vérifié ✅";
-//                 successMsg.style.display = "block";
-//               }
-//               setTimeout(() => window.location.href = redirectIfVerified, 2000);
-//               return;
-//             }
-
-//             // 📩 Envoie l'email de vérification
-//             console.log("📨 Sending verification email...");
-//             await refreshedUser.sendEmailVerification();
-
-//             if (successMsg) {
-//               successMsg.textContent = "Email de vérification envoyé ! 📩";
-//               successMsg.style.display = "block";
-//             }
-
-//             // ⏳ Cooldown bouton avec affichage immédiat (modif pour input[type=submit])
-//             button.disabled = true;
-//             let remaining = parseInt(cooldownSeconds, 10) || 30;
-
-//             button.value = `Renvoyer dans ${remaining}s...`;
-//             remaining--;
-
-//             const cooldownInterval = setInterval(() => {
-//               if (remaining <= 0) {
-//                 clearInterval(cooldownInterval);
-//                 button.value = "⏳ Vérifie ta boîte mail";
-//                 return;
-//               }
-
-//               button.value = `Renvoyer dans ${remaining}s...`;
-//               remaining--;
-//             }, 1000);
-
-//             // 🔁 Polling vérification
-//             const polling = setInterval(async () => {
-//               try {
-//                 await refreshedUser.reload();
-//                 if (refreshedUser.emailVerified) {
-//                   clearInterval(polling);
-//                   if (successMsg) {
-//                     successMsg.textContent = "Email vérifié avec succès ✅";
-//                     successMsg.style.display = "block";
-//                   }
-//                   setTimeout(() => window.location.href = redirectIfVerified, 1500);
-//                 }
-//               } catch (pollError) {
-//                 console.error("Erreur pendant le polling :", pollError);
-//               }
-//             }, 5000);
-
-//           } catch (error) {
-//             console.error("💥 Erreur lors de l'envoi :", error);
-//             if (errorMsg) {
-//               errorMsg.textContent = "Erreur : " + error.message;
-//               errorMsg.style.display = "block";
-//             }
-//           }
-//         });
-//       });
-//     });
-//   });
-// }
-
 function setupSendVerificationEmail(
   buttonId,
   successDivId,
@@ -482,17 +371,11 @@ function setupForgotPassword(
       resetButton.addEventListener("click", async function (e) {
         e.preventDefault();
 
-        const email = emailInput.value.trim();
+        const email = emailInput.value.trim().toLowerCase(); // 🔹 Normalisation
 
         // Reset messages
-        if (successMsg) {
-          successMsg.textContent = "";
-          successMsg.style.display = "none";
-        }
-        if (errorMsg) {
-          errorMsg.textContent = "";
-          errorMsg.style.display = "none";
-        }
+        if (successMsg) successMsg.style.display = "none";
+        if (errorMsg) errorMsg.style.display = "none";
 
         if (!email) {
           if (errorMsg) {
@@ -507,18 +390,18 @@ function setupForgotPassword(
           // 🔍 Vérifie les méthodes de connexion associées à cet email
           const methods = await firebase.auth().fetchSignInMethodsForEmail(email);
 
-          if (methods.includes("google.com")) {
+          if (methods.length === 0) {
             if (errorMsg) {
-              errorMsg.textContent = "❌ Ce compte utilise Google, réinitialisation par email impossible.";
+              errorMsg.textContent = "❌ Aucun compte trouvé avec cet email. Vérifie l'orthographe.";
               errorMsg.style.display = "block";
               errorMsg.style.color = "red";
             }
             return;
           }
 
-          if (!methods.includes("password")) {
+          if (methods.includes("google.com")) {
             if (errorMsg) {
-              errorMsg.textContent = "❌ Aucun compte trouvé avec cet email.";
+              errorMsg.textContent = "❌ Ce compte utilise Google, réinitialisation par email impossible.";
               errorMsg.style.display = "block";
               errorMsg.style.color = "red";
             }
@@ -539,11 +422,12 @@ function setupForgotPassword(
           let remaining = parseInt(cooldownSeconds, 10) || 30;
 
           const originalText = resetButton.value || resetButton.textContent || "Réinitialiser le mot de passe";
-          if (resetButton.tagName === "INPUT") {
-            resetButton.value = `Renvoyer dans ${remaining}s...`;
-          } else {
-            resetButton.textContent = `Renvoyer dans ${remaining}s...`;
-          }
+          const setBtnText = (txt) =>
+            resetButton.tagName === "INPUT"
+              ? (resetButton.value = txt)
+              : (resetButton.textContent = txt);
+
+          setBtnText(`Renvoyer dans ${remaining}s...`);
           remaining--;
 
           clearInterval(cooldownInterval);
@@ -551,18 +435,10 @@ function setupForgotPassword(
             if (remaining <= 0) {
               clearInterval(cooldownInterval);
               resetButton.disabled = false;
-              if (resetButton.tagName === "INPUT") {
-                resetButton.value = originalText;
-              } else {
-                resetButton.textContent = originalText;
-              }
+              setBtnText(originalText);
               return;
             }
-            if (resetButton.tagName === "INPUT") {
-              resetButton.value = `Renvoyer dans ${remaining}s...`;
-            } else {
-              resetButton.textContent = `Renvoyer dans ${remaining}s...`;
-            }
+            setBtnText(`Renvoyer dans ${remaining}s...`);
             remaining--;
           }, 1000);
 

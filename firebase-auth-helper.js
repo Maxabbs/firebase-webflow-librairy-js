@@ -631,11 +631,15 @@ function setupDisplayNameSave(saveBtnId, inputId, successDivId, errorDivId) {
       }
 
       try {
+        saveBtn.disabled = true;
         await firebase.auth().currentUser.updateProfile({ displayName: newDisplayName });
+        console.log("DisplayName mis à jour :", newDisplayName);
         showSuccess("Nom d'affichage mis à jour avec succès !");
       } catch (error) {
         console.error("Erreur mise à jour displayName:", error);
         showError("Erreur lors de la mise à jour. Réessaie plus tard.");
+      } finally {
+        saveBtn.disabled = false;
       }
     });
 
@@ -661,6 +665,7 @@ function setupDisplayNameSave(saveBtnId, inputId, successDivId, errorDivId) {
     }
   });
 }
+
 
 
 

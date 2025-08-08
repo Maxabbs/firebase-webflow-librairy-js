@@ -54,6 +54,48 @@ function requireEmailVerified(redirectIfNotLoggedIn = "/firebase/login", redirec
   });
 }
 
+function requireEmailVerifiedOnClick(
+  buttonClass,
+  redirectIfNotLoggedIn = "/firebase/login",
+  redirectIfNotVerified = "/firebase/verify"
+) {
+  waitForFirebase(() => {
+    const buttons = document.querySelectorAll(`.${buttonClass}`);
+
+    buttons.forEach(button => {
+      button.addEventListener("click", async (e) => {
+        e.preventDefault();
+
+        const user = firebase.auth().currentUser;
+
+        if (!user) {
+          window.location.href = redirectIfNotLoggedIn;
+          return;
+        }
+
+        // Vérifie si user connecté avec email/password et email pas vérifié
+        const isEmailPasswordUser = user.providerData.some(p => p.providerId === "password");
+
+        if (isEmailPasswordUser && !user.emailVerified) {
+          window.location.href = redirectIfNotVerified;
+          return;
+        }
+
+        // Tout est OK, on autorise l'action : si le bouton est un <a>, on suit le href, sinon on peut customiser ici
+
+        // Par défaut, si c'est un lien <a>, on simule le click normal
+        if (button.tagName === "A" && button.href) {
+          window.location.href = button.href;
+        } else {
+          // Si tu as une action personnalisée, tu peux la déclencher ici, ou simplement laisser passer (par ex. enlever e.preventDefault)
+          // Ici on enlève l'interception du clic pour que le bouton fasse son boulot naturel:
+          e.target.click();
+        }
+      });
+    });
+  });
+}
+
 // 🔑 Login Email & Mot de passe
 function setupLogin(
   emailId,

@@ -349,7 +349,7 @@ function setupLogout(buttonId, redirectAfterLogout = "/") {
     });
 }
 
-// 🔄 Réinitialisation mot de passe par email (avec vérif Google)
+// 🔄 Réinitialisation mot de passe par email (version debug + retry + fallback)
 function setupForgotPassword(
   emailId,
   buttonId,
@@ -359,101 +359,179 @@ function setupForgotPassword(
 ) {
   document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
+      console.log("[forgotPwd] waitForFirebase callback — firebase:", !!window.firebase, "apps:", (firebase && firebase.apps) ? firebase.apps.length : 0);
+
       const emailInput = document.getElementById(emailId);
       const resetButton = document.getElementById(buttonId);
       const successMsg = document.getElementById(successDivId);
       const errorMsg = document.getElementById(errorDivId);
 
-      if (!emailInput || !resetButton) return;
+      if (!emailInput || !resetButton) {
+        console.error("[forgotPwd] Elements non trouvés:", { emailId, buttonId });
+        return;
+      }
 
       let cooldownInterval = null;
 
       resetButton.addEventListener("click", async function (e) {
         e.preventDefault();
+        console.log("[forgotPwd] Click reçu");
 
-        const email = emailInput.value.trim().toLowerCase(); // 🔹 Normalisation
+        const rawEmail = emailInput.value;
+        console.log("[forgotPwd] Valeur email brute :", rawEmail);
 
-        // Reset messages
-        if (successMsg) successMsg.style.display = "none";
-        if (errorMsg) errorMsg.style.display = "none";
+        const email = (rawEmail || "").trim();
+        // On ne force pas toLowerCase systématiquement — on logge la normalisation pour debug.
+        const normalizedEmail = email.toLowerCase();
+
+        // Reset messages visuels
+        if (successMsg) {
+          successMsg.textContent = "";
+          successMsg.style.display = "none";
+        }
+        if (errorMsg) {
+          errorMsg.textContent = "";
+          errorMsg.style.display = "none";
+        }
 
         if (!email) {
-          if (errorMsg) {
-            errorMsg.textContent = "❌ Merci d’entrer ton email.";
-            errorMsg.style.display = "block";
-            errorMsg.style.color = "red";
-          }
+          setError("❌ Merci d’entrer ton email.");
+          console.warn("[forgotPwd] email vide");
           return;
         }
 
         try {
-          // 🔍 Vérifie les méthodes de connexion associées à cet email
-          const methods = await firebase.auth().fetchSignInMethodsForEmail(email);
-
-          if (methods.length === 0) {
-            if (errorMsg) {
-              errorMsg.textContent = "❌ Aucun compte trouvé avec cet email. Vérifie l'orthographe.";
-              errorMsg.style.display = "block";
-              errorMsg.style.color = "red";
+          // Retry fetchSignInMethodsForEmail (3 tentatives)
+          let methods = [];
+          let fetched = false;
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              console.log(`[forgotPwd] fetchSignInMethodsForEmail attempt ${attempt} for "${normalizedEmail}"`);
+              methods = await firebase.auth().fetchSignInMethodsForEmail(normalizedEmail);
+              console.log("[forgotPwd] fetchSignInMethodsForEmail réponse :", methods);
+              fetched = true;
+              break;
+            } catch (fetchErr) {
+              console.warn(`[forgotPwd] fetchSignInMethodsForEmail échec attempt ${attempt}:`, fetchErr);
+              // si erreur réseau ou temporaire, attendre un petit peu puis retenter
+              if (attempt < 3) await new Promise((r) => setTimeout(r, 300 * attempt));
+              else throw fetchErr;
             }
-            return;
           }
 
-          if (methods.includes("google.com")) {
-            if (errorMsg) {
-              errorMsg.textContent = "❌ Ce compte utilise Google, réinitialisation par email impossible.";
-              errorMsg.style.display = "block";
-              errorMsg.style.color = "red";
-            }
-            return;
-          }
-
-          // 📩 Envoie l'email de réinitialisation
-          await firebase.auth().sendPasswordResetEmail(email);
-
-          if (successMsg) {
-            successMsg.textContent = "📩 Email de réinitialisation envoyé ! Vérifie ta boîte de réception.";
-            successMsg.style.display = "block";
-            successMsg.style.color = "green";
-          }
-
-          // Cooldown anti-spam
-          resetButton.disabled = true;
-          let remaining = parseInt(cooldownSeconds, 10) || 30;
-
-          const originalText = resetButton.value || resetButton.textContent || "Réinitialiser le mot de passe";
-          const setBtnText = (txt) =>
-            resetButton.tagName === "INPUT"
-              ? (resetButton.value = txt)
-              : (resetButton.textContent = txt);
-
-          setBtnText(`Renvoyer dans ${remaining}s...`);
-          remaining--;
-
-          clearInterval(cooldownInterval);
-          cooldownInterval = setInterval(() => {
-            if (remaining <= 0) {
-              clearInterval(cooldownInterval);
-              resetButton.disabled = false;
-              setBtnText(originalText);
+          // Si on a bien exécuté la requête mais méthode vide -> fallback try sendPasswordResetEmail
+          if (fetched && (!methods || methods.length === 0)) {
+            console.warn("[forgotPwd] fetchSignInMethodsForEmail a retourné [] — tentative fallback sendPasswordResetEmail (pour diagnostiquer)");
+            try {
+              await firebase.auth().sendPasswordResetEmail(normalizedEmail);
+              console.log("[forgotPwd] Fallback sendPasswordResetEmail success (email existe ou Firebase a accepté la requête)");
+              showSuccess("📩 Email de réinitialisation envoyé ! Vérifie ta boîte de réception.");
+              startCooldown();
+              return;
+            } catch (fallbackErr) {
+              console.error("[forgotPwd] Fallback sendPasswordResetEmail a échoué :", fallbackErr);
+              handleFirebaseError(fallbackErr);
               return;
             }
-            setBtnText(`Renvoyer dans ${remaining}s...`);
-            remaining--;
-          }, 1000);
-
-        } catch (error) {
-          console.error("💥 Erreur reset password :", error);
-          if (errorMsg) {
-            errorMsg.textContent = "Erreur : " + error.message;
-            errorMsg.style.display = "block";
-            errorMsg.style.color = "red";
           }
+
+          // Si méthodes trouvées
+          if (!methods || methods.length === 0) {
+            // Si on arrive ici, cela veut dire qu'on n'a pas pu fetcher correctement (mais on aurait fait fallback). On le signale.
+            setError("❌ Aucun compte trouvé avec cet email (fetchSignInMethodsForEmail a renvoyé []). Vérifie l'orthographe ou réessaie plus tard.");
+            console.warn("[forgotPwd] Aucun provider trouvé et fallback déjà tenté.");
+            return;
+          }
+
+          console.log("[forgotPwd] providers détectés :", methods);
+
+          // Si compte lié uniquement à Google (pas de 'password'), on bloque
+          if (methods.includes("google.com") && !methods.includes("password")) {
+            setError("❌ Ce compte utilise Google, réinitialisation par email impossible.");
+            console.log("[forgotPwd] Compte Google-only détecté — providers:", methods);
+            return;
+          }
+
+          // OK, envoi du mail
+          console.log("[forgotPwd] Envoi email reset pour:", normalizedEmail);
+          await firebase.auth().sendPasswordResetEmail(normalizedEmail);
+          console.log("[forgotPwd] sendPasswordResetEmail resolved (succès)");
+          showSuccess("📩 Email de réinitialisation envoyé ! Vérifie ta boîte de réception.");
+          startCooldown();
+        } catch (error) {
+          console.error("[forgotPwd] Erreur attrapée :", error);
+          handleFirebaseError(error);
         }
-      });
-    });
-  });
+      }); // end click handler
+
+      // ---------- helper functions ----------
+      function showSuccess(text) {
+        if (successMsg) {
+          successMsg.textContent = text;
+          successMsg.style.display = "block";
+          successMsg.style.color = "green";
+        } else {
+          console.log("[forgotPwd] success:", text);
+        }
+      }
+
+      function setError(text) {
+        if (errorMsg) {
+          errorMsg.textContent = text;
+          errorMsg.style.display = "block";
+          errorMsg.style.color = "red";
+        } else {
+          console.warn("[forgotPwd] error:", text);
+        }
+      }
+
+      function handleFirebaseError(err) {
+        const code = err && err.code ? err.code : null;
+        console.log("[forgotPwd] handleFirebaseError code:", code, "message:", err && err.message);
+        let userMsg = err && err.message ? err.message : "Erreur inconnue";
+
+        // Mapping des codes fréquents côté client
+        if (code === "auth/user-not-found") {
+          userMsg = "❌ Aucun compte trouvé avec cet email.";
+        } else if (code === "auth/invalid-email") {
+          userMsg = "❌ Email invalide.";
+        } else if (code === "auth/too-many-requests") {
+          userMsg = "⏳ Trop de tentatives. Réessaie plus tard.";
+        } else if (code === "auth/network-request-failed") {
+          userMsg = "⚠️ Erreur réseau. Vérifie ta connexion et réessaie.";
+        }
+
+        setError(userMsg);
+      }
+
+      function startCooldown() {
+        // Cooldown anti-spam
+        resetButton.disabled = true;
+        let remaining = parseInt(cooldownSeconds, 10) || 30;
+        const originalText = resetButton.value || resetButton.textContent || "Réinitialiser le mot de passe";
+        const setBtnText = (txt) =>
+          resetButton.tagName === "INPUT" ? (resetButton.value = txt) : (resetButton.textContent = txt);
+
+        setBtnText(`Renvoyer dans ${remaining}s...`);
+        remaining--;
+
+        clearInterval(cooldownInterval);
+        cooldownInterval = setInterval(() => {
+          if (remaining <= 0) {
+            clearInterval(cooldownInterval);
+            resetButton.disabled = false;
+            setBtnText(originalText);
+            return;
+          }
+          setBtnText(`Renvoyer dans ${remaining}s...`);
+          remaining--;
+        }, 1000);
+      }
+      // ---------- end helpers ----------
+    }); // end waitForFirebase
+  }); // end DOMContentLoaded
 }
+
 
 
 // ⏳ Utilitaire : attendre que Firebase soit prêt

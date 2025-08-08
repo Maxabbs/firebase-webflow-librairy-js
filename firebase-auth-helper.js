@@ -460,29 +460,31 @@ function setupLogout(buttonId, redirectAfterLogout = "/") {
     });
 }
 
+// 🔄 Réinitialisation mot de passe par email (avec vérif Google)
 function setupForgotPassword(
+  emailId,
   buttonId,
   successDivId,
   errorDivId,
-  emailInputId,
   cooldownSeconds = 30
 ) {
   document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
-      const button = document.getElementById(buttonId);
+      const emailInput = document.getElementById(emailId);
+      const resetButton = document.getElementById(buttonId);
       const successMsg = document.getElementById(successDivId);
       const errorMsg = document.getElementById(errorDivId);
-      const emailInput = document.getElementById(emailInputId);
 
-      if (!button || !emailInput) return;
+      if (!emailInput || !resetButton) return;
 
       let cooldownInterval = null;
 
-      button.addEventListener("click", async function (event) {
-        event.preventDefault();
-        event.stopPropagation();
+      resetButton.addEventListener("click", async function (e) {
+        e.preventDefault();
 
-        // 🔄 Reset messages
+        const email = emailInput.value.trim();
+
+        // Reset messages
         if (successMsg) {
           successMsg.textContent = "";
           successMsg.style.display = "none";
@@ -492,63 +494,85 @@ function setupForgotPassword(
           errorMsg.style.display = "none";
         }
 
-        const email = emailInput.value.trim();
-
         if (!email) {
           if (errorMsg) {
-            errorMsg.textContent = "Merci de renseigner ton email.";
+            errorMsg.textContent = "❌ Merci d’entrer ton email.";
             errorMsg.style.display = "block";
+            errorMsg.style.color = "red";
           }
           return;
         }
 
         try {
-          // 📩 Envoie l'email de reset
-          console.log("📨 Sending password reset email...");
+          // 🔍 Vérifie les méthodes de connexion associées à cet email
+          const methods = await firebase.auth().fetchSignInMethodsForEmail(email);
+
+          if (methods.includes("google.com")) {
+            if (errorMsg) {
+              errorMsg.textContent = "❌ Ce compte utilise Google, réinitialisation par email impossible.";
+              errorMsg.style.display = "block";
+              errorMsg.style.color = "red";
+            }
+            return;
+          }
+
+          if (!methods.includes("password")) {
+            if (errorMsg) {
+              errorMsg.textContent = "❌ Aucun compte trouvé avec cet email.";
+              errorMsg.style.display = "block";
+              errorMsg.style.color = "red";
+            }
+            return;
+          }
+
+          // 📩 Envoie l'email de réinitialisation
           await firebase.auth().sendPasswordResetEmail(email);
 
           if (successMsg) {
-            successMsg.textContent = "Un lien de réinitialisation a été envoyé ! 📩";
+            successMsg.textContent = "📩 Email de réinitialisation envoyé ! Vérifie ta boîte de réception.";
             successMsg.style.display = "block";
+            successMsg.style.color = "green";
           }
 
-          // ⏳ Cooldown
-          button.disabled = true;
+          // Cooldown anti-spam
+          resetButton.disabled = true;
           let remaining = parseInt(cooldownSeconds, 10) || 30;
 
-          const originalText = button.value || "Réinitialiser le mot de passe";
-          button.value = `Renvoyer dans ${remaining}s...`;
+          const originalText = resetButton.value || resetButton.textContent || "Réinitialiser le mot de passe";
+          if (resetButton.tagName === "INPUT") {
+            resetButton.value = `Renvoyer dans ${remaining}s...`;
+          } else {
+            resetButton.textContent = `Renvoyer dans ${remaining}s...`;
+          }
           remaining--;
 
           clearInterval(cooldownInterval);
           cooldownInterval = setInterval(() => {
             if (remaining <= 0) {
               clearInterval(cooldownInterval);
-              button.disabled = false;
-              button.value = originalText;
+              resetButton.disabled = false;
+              if (resetButton.tagName === "INPUT") {
+                resetButton.value = originalText;
+              } else {
+                resetButton.textContent = originalText;
+              }
               return;
             }
-
-            button.value = `Renvoyer dans ${remaining}s...`;
+            if (resetButton.tagName === "INPUT") {
+              resetButton.value = `Renvoyer dans ${remaining}s...`;
+            } else {
+              resetButton.textContent = `Renvoyer dans ${remaining}s...`;
+            }
             remaining--;
           }, 1000);
 
         } catch (error) {
-          console.error("💥 Erreur envoi reset :", error);
+          console.error("💥 Erreur reset password :", error);
           if (errorMsg) {
-            let msg = "Erreur : " + error.message;
-            if (error.code === "auth/user-not-found") {
-              msg = "Aucun compte trouvé avec cet email.";
-            } else if (error.code === "auth/invalid-email") {
-              msg = "Email invalide.";
-            }
-
-            errorMsg.textContent = msg;
+            errorMsg.textContent = "Erreur : " + error.message;
             errorMsg.style.display = "block";
+            errorMsg.style.color = "red";
           }
-
-          button.disabled = false;
-          button.value = "Réessayer";
         }
       });
     });

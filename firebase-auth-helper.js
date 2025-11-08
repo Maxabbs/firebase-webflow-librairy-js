@@ -708,6 +708,66 @@ function setupDisplayNameSave(saveBtnId, inputId, successDivId, errorDivId) {
   });
 }
 
+function setupTallyRedirectWithEmail(
+  buttonId,
+  tallyUrl,
+  emailParam = "email"
+) {
+  document.addEventListener("DOMContentLoaded", () => {
+    waitForFirebase(() => {
+      const button = document.getElementById(buttonId);
+
+      if (!button) {
+        console.warn(`[setupTallyRedirectWithEmail] Bouton avec l'id "${buttonId}" introuvable.`);
+        return;
+      }
+
+      let cachedEmail = null;
+      let authReady = false;
+
+      firebase.auth().onAuthStateChanged((user) => {
+        authReady = true;
+        cachedEmail = user && user.email ? user.email : null;
+      });
+
+      button.addEventListener("click", (e) => {
+        e.preventDefault();
+
+        if (!authReady) {
+          console.warn("[setupTallyRedirectWithEmail] Firebase Auth n'a pas encore initialisé l'utilisateur.");
+          return;
+        }
+
+        const user = firebase.auth().currentUser;
+
+        if (!user) {
+          console.warn("[setupTallyRedirectWithEmail] Aucun utilisateur connecté.");
+          return;
+        }
+
+        const email = user.email || cachedEmail;
+
+        if (!email) {
+          console.error("[setupTallyRedirectWithEmail] Impossible de récupérer l'email de l'utilisateur connecté.");
+          return;
+        }
+
+        let targetUrl = (tallyUrl || "").trim();
+        try {
+          const url = new URL(targetUrl, window.location.origin);
+          url.searchParams.set(emailParam, email);
+          targetUrl = url.toString();
+        } catch (err) {
+          const separator = targetUrl.includes("?") ? "&" : "?";
+          targetUrl = `${targetUrl}${separator}${encodeURIComponent(emailParam)}=${encodeURIComponent(email)}`;
+        }
+
+        window.location.href = targetUrl;
+      });
+    });
+  });
+}
+
 function setupStripeButtonsWithFirebaseAuth(buttonClass, loginRedirect, verifyEmailRedirect) {
   waitForFirebase(() => {
     console.log("[setupStripeButtons] Firebase prêt. Initialisation.");
@@ -831,4 +891,5 @@ window.setupForgotPassword = setupForgotPassword;
 window.feedUserEmail = feedUserEmail;
 window.feedUserProfilInfo = feedUserProfilInfo;
 window.setupDisplayNameSave = setupDisplayNameSave;
+window.setupTallyRedirectWithEmail = setupTallyRedirectWithEmail;
 window.setupStripeButtonsWithFirebaseAuth = setupStripeButtonsWithFirebaseAuth;

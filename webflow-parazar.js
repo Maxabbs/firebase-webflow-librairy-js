@@ -157,7 +157,7 @@ function setupParazarSecurePayment(config) {
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     redirectIfMissingId: "",
-    createRequestBody: function () { return {}; }
+    createRequestBody: function () { return null; }
   }, config || {});
 
   if (!options.stripePublicKey) {
@@ -234,13 +234,15 @@ function setupParazarSecurePayment(config) {
     const path = "/api/parazar/secure/" + encodeURIComponent(checkinId);
     const requestBody = typeof options.createRequestBody === "function"
       ? options.createRequestBody(checkinId)
-      : {};
+      : null;
 
-    const response = await fetch(options.apiBase + path, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(requestBody || {})
-    });
+    const requestInit = { method: "POST" };
+    if (requestBody !== null && requestBody !== undefined) {
+      requestInit.headers = { "Content-Type": "application/json" };
+      requestInit.body = JSON.stringify(requestBody);
+    }
+
+    const response = await fetch(options.apiBase + path, requestInit);
 
     const payload = await response.json().catch(function () { return {}; });
     if (!response.ok) {
@@ -303,7 +305,12 @@ function setupParazarSecurePayment(config) {
         ui.confirmButton.disabled = false;
       }
     } catch (error) {
-      showError(error && error.message ? error.message : "Erreur");
+      const isNetworkFetchError = error instanceof TypeError && /fetch/i.test(String(error.message || ""));
+      showError(
+        isNetworkFetchError
+          ? "Connexion API impossible (CORS, reseau ou certificat)."
+          : (error && error.message ? error.message : "Erreur")
+      );
       if (typeof options.onError === "function") {
         options.onError(error);
       }

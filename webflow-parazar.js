@@ -162,7 +162,7 @@ function setupParazarSecureSetupIntent(config) {
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     returnUrl: window.location.href,
-    successRedirectUrl: "https://www.parazar.co/instant/confirm",
+    successRedirectUrl: "https://www.parazar-suivez-vos-envies.webflow.io/instant/confirm",
     statusPollIntervalMs: 1000,
     statusPollMaxDurationMs: 120000,
     redirectIfMissingId: "",

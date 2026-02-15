@@ -122,7 +122,7 @@ function ensureParazarSecureModal(options) {
   modal.className = "parazar-secure-modal";
   modal.setAttribute("aria-hidden", "true");
   modal.innerHTML = [
-    '<div class="parazar-secure-panel" role="dialog" aria-modal="true" aria-label="Paiement sécurisé">',
+    '<div class="parazar-secure-panel" role="dialog" aria-modal="true" aria-label="Enregistrement sécurisé">',
     '<button id="' + closeButtonId + '" class="parazar-secure-close" type="button" aria-label="Fermer">x</button>',
     '<div id="' + preauthTextId + '" class="parazar-secure-preauth"></div>',
     '<div id="' + errorId + '" class="parazar-secure-error" hidden></div>',
@@ -150,29 +150,33 @@ function ensureParazarSecureModal(options) {
   };
 }
 
-function setupParazarSecurePayment(config) {
+function setupParazarSecureSetupIntent(config) {
   const options = Object.assign({
     buttonId: "secure-btn-id",
     stripePublicKey: "",
     apiBase: "https://backend.parazar.co",
     confirmButtonLabel: "Confirmer ma place",
-    preauthorizationLabel: "Pré-autorisation pour PARAZAR",
-    walletMerchantName: "Pré-autorisation pour PARAZAR",
+    preauthorizationLabel: "100% gratuit si tu viens",
+    walletMerchantName: "Parazar",
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
+    returnUrl: window.location.href,
     redirectIfMissingId: "",
     createRequestBody: function () { return null; },
     paymentElementOptions: {},
-    elementAppearance: {}
+    elementAppearance: {},
+    onIntentCreated: null,
+    onSetupConfirmed: null,
+    onError: null
   }, config || {});
 
   if (!options.stripePublicKey) {
-    throw new Error("setupParazarSecurePayment: stripePublicKey est obligatoire");
+    throw new Error("setupParazarSecureSetupIntent: stripePublicKey est obligatoire");
   }
 
   const openButton = document.getElementById(options.buttonId);
   if (!openButton) {
-    throw new Error("setupParazarSecurePayment: bouton introuvable #" + options.buttonId);
+    throw new Error("setupParazarSecureSetupIntent: bouton introuvable #" + options.buttonId);
   }
 
   if (openButton.__parazarSecureController && typeof openButton.__parazarSecureController.destroy === "function") {
@@ -202,42 +206,8 @@ function setupParazarSecurePayment(config) {
     ui.errorContainer.textContent = message;
   }
 
-  function extractIntentAmount(payload) {
-    if (!payload || typeof payload !== "object") {
-      return null;
-    }
-    const amount = payload.amount != null
-      ? payload.amount
-      : (payload.payment_intent_amount != null ? payload.payment_intent_amount : (payload.payment_intent && payload.payment_intent.amount));
-    const currency = payload.currency != null
-      ? payload.currency
-      : (payload.payment_intent_currency != null ? payload.payment_intent_currency : (payload.payment_intent && payload.payment_intent.currency));
-
-    if (amount == null || !currency) {
-      return null;
-    }
-    if (!Number.isFinite(Number(amount))) {
-      return null;
-    }
-
-    try {
-      const formatted = new Intl.NumberFormat("fr-FR", {
-        style: "currency",
-        currency: String(currency).toUpperCase()
-      }).format(Number(amount) / 100);
-      return formatted;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  function updatePreauthorizationLabel(payload) {
+  function updatePreauthorizationLabel() {
     if (!ui.preauthTextContainer) {
-      return;
-    }
-    const formattedAmount = extractIntentAmount(payload);
-    if (formattedAmount) {
-      ui.preauthTextContainer.textContent = options.preauthorizationLabel + " - " + formattedAmount;
       return;
     }
     ui.preauthTextContainer.textContent = options.preauthorizationLabel;
@@ -279,7 +249,7 @@ function setupParazarSecurePayment(config) {
     return null;
   }
 
-  async function createSecureIntent(checkinId) {
+  async function createSetupIntent(checkinId) {
     const path = "/api/parazar/secure/" + encodeURIComponent(checkinId);
     const requestBody = typeof options.createRequestBody === "function"
       ? options.createRequestBody(checkinId)
@@ -300,6 +270,9 @@ function setupParazarSecurePayment(config) {
 
     if (!payload.client_secret) {
       throw new Error("Le backend n'a pas retourne client_secret");
+    }
+    if (!/^seti_[^_]+_secret_/.test(String(payload.client_secret))) {
+      throw new Error("Le backend doit retourner un SetupIntent (client_secret seti_...)");
     }
 
     if (typeof options.onIntentCreated === "function") {
@@ -410,8 +383,8 @@ function setupParazarSecurePayment(config) {
         throw new Error("checkin_id introuvable dans l'URL");
       }
 
-      const intentPayload = await createSecureIntent(checkinId);
-      updatePreauthorizationLabel(intentPayload);
+      const intentPayload = await createSetupIntent(checkinId);
+      updatePreauthorizationLabel();
       await mountPaymentElement(intentPayload.client_secret);
       openModal();
       if (ui.confirmButton) {
@@ -445,24 +418,32 @@ function setupParazarSecurePayment(config) {
     showError("");
 
     try {
-      const result = await stripeInstance.confirmPayment({
+      const confirmSetupParams = {
         elements: elementsInstance,
         redirect: options.redirectMode
-      });
+      };
+      if (options.returnUrl) {
+        confirmSetupParams.confirmParams = { return_url: options.returnUrl };
+      }
+
+      const result = await stripeInstance.confirmSetup(confirmSetupParams);
 
       if (result.error) {
-        throw new Error(result.error.message || "Paiement refuse");
+        throw new Error(result.error.message || "Echec de l'enregistrement");
       }
 
-      const status = result.paymentIntent && result.paymentIntent.status
-        ? result.paymentIntent.status
+      const status = result.setupIntent && result.setupIntent.status
+        ? result.setupIntent.status
         : "unknown";
 
+      if (typeof options.onSetupConfirmed === "function") {
+        options.onSetupConfirmed(result.setupIntent || null);
+      }
       if (typeof options.onPaymentConfirmed === "function") {
-        options.onPaymentConfirmed(result.paymentIntent || null);
+        options.onPaymentConfirmed(result.setupIntent || null);
       }
 
-      if (status === "requires_capture" || status === "succeeded" || status === "processing") {
+      if (status === "succeeded" || status === "processing") {
         closeModal();
         return;
       }
@@ -523,4 +504,9 @@ function setupParazarSecurePayment(config) {
 
   openButton.__parazarSecureController = controller;
   return controller;
+}
+
+// Compat: ancien nom conservé, redirige vers le flow SetupIntent.
+function setupParazarSecurePayment(config) {
+  return setupParazarSecureSetupIntent(config);
 }

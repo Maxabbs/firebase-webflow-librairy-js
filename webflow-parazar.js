@@ -97,16 +97,16 @@ function ensureParazarSecureModal(options) {
     const style = document.createElement("style");
     style.id = styleId;
     style.textContent = [
-      ".parazar-secure-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.58);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}",
+      ".parazar-secure-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}",
       ".parazar-secure-modal.parazar-open{display:flex}",
-      ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#060606;border:1px solid #202020;box-shadow:0 20px 60px rgba(0,0,0,.55)}",
-      ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#c0f333;cursor:pointer;padding:4px 8px}",
+      ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 20px 60px rgba(2,6,23,.24)}",
+      ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#64748b;cursor:pointer;padding:4px 8px}",
       ".parazar-secure-close:hover{opacity:.85}",
-      ".parazar-secure-preauth{margin:0 36px 10px 0;color:#c0f333;font-size:14px;line-height:1.4;font-weight:500}",
-      ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#2c0d0d;color:#ff8f8f;border:1px solid #5a1a1a}",
+      ".parazar-secure-preauth{margin:0 36px 10px 0;color:#334155;font-size:14px;line-height:1.4;font-weight:500}",
+      ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}",
       ".parazar-secure-error[hidden]{display:none}",
-      ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #c0f333;border-radius:10px;background:#060606;color:#c0f333;font-size:15px;cursor:pointer;transition:all .16s ease}",
-      ".parazar-secure-confirm:hover{background:#0c0c0c}",
+      ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #1d4ed8;border-radius:10px;background:#2563eb;color:#ffffff;font-size:15px;cursor:pointer;transition:all .16s ease}",
+      ".parazar-secure-confirm:hover{background:#1d4ed8}",
       ".parazar-secure-confirm:disabled{opacity:.45;cursor:not-allowed}",
       "@media (max-width:480px){.parazar-secure-modal{padding:10px}.parazar-secure-panel{padding:14px;border-radius:12px}}"
     ].join("");
@@ -156,8 +156,8 @@ function setupParazarSecureSetupIntent(config) {
     stripePublicKey: "",
     apiBase: "https://backend.parazar.co",
     confirmButtonLabel: "Confirmer ma place",
-    preauthorizationLabel: "100% gratuit si tu viens",
-    walletMerchantName: "Parazar",
+    preauthorizationLabel: "100% gratuit - Aucun débit si tu viens",
+    walletMerchantName: "Parazar - Zéro débit si tu viens",
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     returnUrl: window.location.href,
@@ -302,31 +302,31 @@ function setupParazarSecureSetupIntent(config) {
       ? options.elementAppearance
       : {};
     const defaultAppearance = {
-      theme: "night",
+      theme: "stripe",
       variables: {
-        colorPrimary: "#c0f333",
-        colorBackground: "#060606",
-        colorText: "#c0f333",
-        colorDanger: "#ff8f8f",
-        colorSuccess: "#c0f333",
-        colorTextSecondary: "#a8d72c",
+        colorPrimary: "#2563eb",
+        colorBackground: "#ffffff",
+        colorText: "#111827",
+        colorDanger: "#dc2626",
+        colorSuccess: "#16a34a",
+        colorTextSecondary: "#6b7280",
         borderRadius: "10px"
       },
       rules: {
-        ".Label": { color: "#c0f333" },
+        ".Label": { color: "#374151" },
         ".Input": {
-          backgroundColor: "#0b0b0b",
-          color: "#c0f333",
-          border: "1px solid #272727"
+          backgroundColor: "#ffffff",
+          color: "#111827",
+          border: "1px solid #d1d5db"
         },
         ".Tab": {
-          backgroundColor: "#0b0b0b",
-          color: "#c0f333",
-          border: "1px solid #272727"
+          backgroundColor: "#f8fafc",
+          color: "#111827",
+          border: "1px solid #d1d5db"
         },
         ".Tab--selected": {
-          borderColor: "#c0f333",
-          boxShadow: "0 0 0 1px #c0f333"
+          borderColor: "#2563eb",
+          boxShadow: "0 0 0 1px #2563eb"
         }
       }
     };

@@ -93,7 +93,7 @@ function loadStripeJs() {
     if (existingScript) {
       existingScript.addEventListener("load", function () { resolve(); });
       existingScript.addEventListener("error", function () {
-        reject(new Error("Impossible de charger Stripe.js"));
+        reject(new Error("Service de paiement indisponible"));
       });
       return;
     }
@@ -103,7 +103,7 @@ function loadStripeJs() {
     script.async = true;
     script.onload = function () { resolve(); };
     script.onerror = function () {
-      reject(new Error("Impossible de charger Stripe.js"));
+      reject(new Error("Service de paiement indisponible"));
     };
     document.head.appendChild(script);
   });
@@ -212,12 +212,12 @@ function setupParazarSecureSetupIntent(config) {
   }, config || {});
 
   if (!options.stripePublicKey) {
-    throw new Error("setupParazarSecureSetupIntent: stripePublicKey est obligatoire");
+    throw new Error("Configuration de paiement incomplète");
   }
 
   const openButton = document.getElementById(options.buttonId);
   if (!openButton) {
-    throw new Error("setupParazarSecureSetupIntent: bouton introuvable #" + options.buttonId);
+    throw new Error("Bouton de paiement introuvable");
   }
 
   if (openButton.__parazarSecureController && typeof openButton.__parazarSecureController.destroy === "function") {
@@ -412,14 +412,14 @@ function setupParazarSecureSetupIntent(config) {
 
     const payload = await response.json().catch(function () { return {}; });
     if (!response.ok) {
-      throw new Error(payload.error || ("Erreur API (" + response.status + ")"));
+      throw new Error("Action impossible pour le moment");
     }
 
     if (!payload.client_secret) {
-      throw new Error("Le backend n'a pas retourne client_secret");
+      throw new Error("Action impossible pour le moment");
     }
     if (!/^seti_[^_]+_secret_/.test(String(payload.client_secret))) {
-      throw new Error("Le backend doit retourner un SetupIntent (client_secret seti_...)");
+      throw new Error("Action impossible pour le moment");
     }
 
     if (typeof options.onIntentCreated === "function") {
@@ -433,7 +433,7 @@ function setupParazarSecureSetupIntent(config) {
     await loadStripeJs();
 
     if (!window.Stripe) {
-      throw new Error("Stripe.js indisponible");
+      throw new Error("Service de paiement indisponible");
     }
 
     stripeInstance = stripeInstance || window.Stripe(options.stripePublicKey);
@@ -567,7 +567,7 @@ function setupParazarSecureSetupIntent(config) {
     try {
       const checkinId = resolveCheckinId();
       if (!checkinId) {
-        throw new Error("checkin_id introuvable dans l'URL");
+        throw new Error("Lien invalide ou expiré");
       }
       currentCheckinId = checkinId;
 
@@ -581,11 +581,7 @@ function setupParazarSecureSetupIntent(config) {
       }
     } catch (error) {
       const isNetworkFetchError = error instanceof TypeError && /fetch/i.test(String(error.message || ""));
-      const errorMessage =
-        isNetworkFetchError
-          ? "Connexion API impossible (CORS, reseau ou certificat)."
-          : (error && error.message ? error.message : "Erreur");
-      showError(errorMessage);
+      showError(isNetworkFetchError ? "Connexion impossible. Réessaie." : "Une erreur est survenue. Réessaie.");
       if (ui.modal && !ui.modal.classList.contains("parazar-open")) {
         openModal();
       }
@@ -617,7 +613,7 @@ function setupParazarSecureSetupIntent(config) {
       const result = await stripeInstance.confirmSetup(confirmSetupParams);
 
       if (result.error) {
-        throw new Error(result.error.message || "Echec de l'enregistrement");
+        throw new Error("Impossible de confirmer pour le moment");
       }
 
       const status = result.setupIntent && result.setupIntent.status
@@ -638,9 +634,9 @@ function setupParazarSecureSetupIntent(config) {
         return;
       }
 
-      showError("Statut Stripe inattendu: " + status);
+      showError("Confirmation en attente. Réessaie dans quelques instants.");
     } catch (error) {
-      showError(error && error.message ? error.message : "Erreur");
+      showError("Impossible de confirmer pour le moment");
       if (typeof options.onError === "function") {
         options.onError(error);
       }

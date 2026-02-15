@@ -88,6 +88,7 @@ function ensureParazarSecureModal(options) {
   const modalId = "parazar-secure-modal";
   const styleId = "parazar-secure-modal-style";
   const paymentElementId = "parazar-payment-element";
+  const preauthTextId = "parazar-secure-preauth";
   const errorId = "parazar-secure-error";
   const confirmButtonId = "parazar-secure-confirm";
   const closeButtonId = "parazar-secure-close";
@@ -101,6 +102,7 @@ function ensureParazarSecureModal(options) {
       ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#060606;border:1px solid #202020;box-shadow:0 20px 60px rgba(0,0,0,.55)}",
       ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#c0f333;cursor:pointer;padding:4px 8px}",
       ".parazar-secure-close:hover{opacity:.85}",
+      ".parazar-secure-preauth{margin:0 36px 10px 0;color:#c0f333;font-size:14px;line-height:1.4;font-weight:500}",
       ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#2c0d0d;color:#ff8f8f;border:1px solid #5a1a1a}",
       ".parazar-secure-error[hidden]{display:none}",
       ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #c0f333;border-radius:10px;background:#060606;color:#c0f333;font-size:15px;cursor:pointer;transition:all .16s ease}",
@@ -118,8 +120,9 @@ function ensureParazarSecureModal(options) {
     modal.className = "parazar-secure-modal";
     modal.setAttribute("aria-hidden", "true");
     modal.innerHTML = [
-      '<div class="parazar-secure-panel" role="dialog" aria-modal="true" aria-label="Paiement securise">',
+      '<div class="parazar-secure-panel" role="dialog" aria-modal="true" aria-label="Paiement sécurisé">',
       '<button id="' + closeButtonId + '" class="parazar-secure-close" type="button" aria-label="Fermer">x</button>',
+      '<div id="' + preauthTextId + '" class="parazar-secure-preauth"></div>',
       '<div id="' + errorId + '" class="parazar-secure-error" hidden></div>',
       '<div id="' + paymentElementId + '"></div>',
       '<button id="' + confirmButtonId + '" class="parazar-secure-confirm" type="button"></button>',
@@ -129,13 +132,18 @@ function ensureParazarSecureModal(options) {
   }
 
   const confirmButton = document.getElementById(confirmButtonId);
+  const preauthNode = document.getElementById(preauthTextId);
   if (confirmButton) {
     confirmButton.textContent = options.confirmButtonLabel;
+  }
+  if (preauthNode) {
+    preauthNode.textContent = options.preauthorizationLabel;
   }
 
   return {
     modal: modal,
     paymentElementContainer: document.getElementById(paymentElementId),
+    preauthTextContainer: document.getElementById(preauthTextId),
     errorContainer: document.getElementById(errorId),
     confirmButton: document.getElementById(confirmButtonId),
     closeButton: document.getElementById(closeButtonId)
@@ -147,8 +155,8 @@ function setupParazarSecurePayment(config) {
     buttonId: "secure-btn-id",
     stripePublicKey: "",
     apiBase: "https://backend.parazar.co",
-    modalTitle: "",
     confirmButtonLabel: "Confirmer ma place",
+    preauthorizationLabel: "Pré-autorisation pour PARAZAR",
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     redirectIfMissingId: "",
@@ -189,6 +197,47 @@ function setupParazarSecurePayment(config) {
 
     ui.errorContainer.hidden = false;
     ui.errorContainer.textContent = message;
+  }
+
+  function extractIntentAmount(payload) {
+    if (!payload || typeof payload !== "object") {
+      return null;
+    }
+    const amount = payload.amount != null
+      ? payload.amount
+      : (payload.payment_intent_amount != null ? payload.payment_intent_amount : (payload.payment_intent && payload.payment_intent.amount));
+    const currency = payload.currency != null
+      ? payload.currency
+      : (payload.payment_intent_currency != null ? payload.payment_intent_currency : (payload.payment_intent && payload.payment_intent.currency));
+
+    if (amount == null || !currency) {
+      return null;
+    }
+    if (!Number.isFinite(Number(amount))) {
+      return null;
+    }
+
+    try {
+      const formatted = new Intl.NumberFormat("fr-FR", {
+        style: "currency",
+        currency: String(currency).toUpperCase()
+      }).format(Number(amount) / 100);
+      return formatted;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function updatePreauthorizationLabel(payload) {
+    if (!ui.preauthTextContainer) {
+      return;
+    }
+    const formattedAmount = extractIntentAmount(payload);
+    if (formattedAmount) {
+      ui.preauthTextContainer.textContent = options.preauthorizationLabel + " - " + formattedAmount;
+      return;
+    }
+    ui.preauthTextContainer.textContent = options.preauthorizationLabel;
   }
 
   function setLoadingState(active, lockConfirmButton) {
@@ -254,7 +303,7 @@ function setupParazarSecurePayment(config) {
       options.onIntentCreated(payload);
     }
 
-    return payload.client_secret;
+    return payload;
   }
 
   async function mountPaymentElement(clientSecret) {
@@ -341,10 +390,11 @@ function setupParazarSecurePayment(config) {
 
     if (ui.confirmButton) {
       ui.confirmButton.disabled = true;
+      ui.confirmButton.style.display = "none";
+      ui.confirmButton.textContent = options.confirmButtonLabel;
     }
     setLoadingState(true, false);
     showError("");
-    openModal();
 
     try {
       const checkinId = resolveCheckinId();
@@ -352,18 +402,24 @@ function setupParazarSecurePayment(config) {
         throw new Error("checkin_id introuvable dans l'URL");
       }
 
-      const clientSecret = await createSecureIntent(checkinId);
-      await mountPaymentElement(clientSecret);
+      const intentPayload = await createSecureIntent(checkinId);
+      updatePreauthorizationLabel(intentPayload);
+      await mountPaymentElement(intentPayload.client_secret);
+      openModal();
       if (ui.confirmButton) {
+        ui.confirmButton.style.display = "block";
         ui.confirmButton.disabled = false;
       }
     } catch (error) {
       const isNetworkFetchError = error instanceof TypeError && /fetch/i.test(String(error.message || ""));
-      showError(
+      const errorMessage =
         isNetworkFetchError
           ? "Connexion API impossible (CORS, reseau ou certificat)."
-          : (error && error.message ? error.message : "Erreur")
-      );
+          : (error && error.message ? error.message : "Erreur");
+      showError(errorMessage);
+      if (ui.modal && !ui.modal.classList.contains("parazar-open")) {
+        openModal();
+      }
       if (typeof options.onError === "function") {
         options.onError(error);
       }

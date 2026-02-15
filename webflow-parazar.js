@@ -52,6 +52,33 @@ function requireUrlPayloadId(redirectUrl = "https://getapp.parazar.co/p") {
   return id;
 }
 
+function isUrlPayloadFormattedId(value) {
+  if (value == null) {
+    return false;
+  }
+  const normalized = String(value).trim();
+  return /^[A-Z]{4}\d{5}$/.test(normalized);
+}
+
+function getUrlPayloadFormattedId() {
+  const id = getUrlPayloadId();
+  if (!id) {
+    return null;
+  }
+  return isUrlPayloadFormattedId(id) ? id : null;
+}
+
+function requireUrlPayloadFormattedId(redirectUrl = "https://getapp.parazar.co/p") {
+  const id = getUrlPayloadFormattedId();
+
+  if (!id) {
+    window.location.replace(redirectUrl);
+    return null;
+  }
+
+  return id;
+}
+
 function loadStripeJs() {
   if (window.Stripe) {
     return Promise.resolve();
@@ -66,7 +93,7 @@ function loadStripeJs() {
     if (existingScript) {
       existingScript.addEventListener("load", function () { resolve(); });
       existingScript.addEventListener("error", function () {
-        reject(new Error("Impossible de charger Stripe.js"));
+        reject(new Error("Service de paiement indisponible"));
       });
       return;
     }
@@ -76,7 +103,7 @@ function loadStripeJs() {
     script.async = true;
     script.onload = function () { resolve(); };
     script.onerror = function () {
-      reject(new Error("Impossible de charger Stripe.js"));
+      reject(new Error("Service de paiement indisponible"));
     };
     document.head.appendChild(script);
   });
@@ -152,6 +179,15 @@ function ensureParazarSecureModal(options) {
 }
 
 function setupParazarSecureSetupIntent(config) {
+  const defaultClientTypeOverrides = {
+    p: {
+      confirmButtonLabel: "Activer mon établissement",
+      preauthorizationLabel: "",
+      walletMerchantName: "Parazar",
+      successRedirectUrl: "pro/confirm"
+    }
+  };
+
   const options = Object.assign({
     buttonId: "secure-btn-id",
     stripePublicKey: "",
@@ -163,6 +199,7 @@ function setupParazarSecureSetupIntent(config) {
     redirectMode: "if_required",
     returnUrl: window.location.href,
     successRedirectUrl: "/instant/confirm",
+    clientTypeOverrides: defaultClientTypeOverrides,
     statusPollIntervalMs: 1000,
     statusPollMaxDurationMs: 120000,
     redirectIfMissingId: "",
@@ -175,12 +212,12 @@ function setupParazarSecureSetupIntent(config) {
   }, config || {});
 
   if (!options.stripePublicKey) {
-    throw new Error("setupParazarSecureSetupIntent: stripePublicKey est obligatoire");
+    throw new Error("Configuration de paiement incomplète");
   }
 
   const openButton = document.getElementById(options.buttonId);
   if (!openButton) {
-    throw new Error("setupParazarSecureSetupIntent: bouton introuvable #" + options.buttonId);
+    throw new Error("Bouton de paiement introuvable");
   }
 
   if (openButton.__parazarSecureController && typeof openButton.__parazarSecureController.destroy === "function") {
@@ -197,6 +234,19 @@ function setupParazarSecureSetupIntent(config) {
   let currentCheckinId = null;
   let statusPollIntervalId = null;
   let statusPollInFlight = false;
+  const clientTypeOverrides = Object.assign(
+    {},
+    defaultClientTypeOverrides,
+    options.clientTypeOverrides && typeof options.clientTypeOverrides === "object"
+      ? options.clientTypeOverrides
+      : {}
+  );
+  let runtimePaymentUi = {
+    confirmButtonLabel: options.confirmButtonLabel,
+    preauthorizationLabel: options.preauthorizationLabel,
+    walletMerchantName: options.walletMerchantName,
+    successRedirectUrl: options.successRedirectUrl
+  };
 
   function showError(message) {
     if (!ui.errorContainer) {
@@ -213,11 +263,36 @@ function setupParazarSecureSetupIntent(config) {
     ui.errorContainer.textContent = message;
   }
 
+  function applyClientTypeSettings(clientType) {
+    const normalizedClientType = String(clientType || "u").trim().toLowerCase();
+    const typeOverrides = clientTypeOverrides[normalizedClientType] && typeof clientTypeOverrides[normalizedClientType] === "object"
+      ? clientTypeOverrides[normalizedClientType]
+      : null;
+
+    runtimePaymentUi = Object.assign(
+      {},
+      {
+        confirmButtonLabel: options.confirmButtonLabel,
+        preauthorizationLabel: options.preauthorizationLabel,
+        walletMerchantName: options.walletMerchantName,
+        successRedirectUrl: options.successRedirectUrl
+      },
+      typeOverrides || {}
+    );
+
+    if (ui.confirmButton) {
+      ui.confirmButton.textContent = runtimePaymentUi.confirmButtonLabel || options.confirmButtonLabel;
+    }
+    updatePreauthorizationLabel();
+  }
+
   function updatePreauthorizationLabel() {
     if (!ui.preauthTextContainer) {
       return;
     }
-    ui.preauthTextContainer.textContent = options.preauthorizationLabel;
+    const label = runtimePaymentUi.preauthorizationLabel || "";
+    ui.preauthTextContainer.textContent = label;
+    ui.preauthTextContainer.style.display = label ? "" : "none";
   }
 
   function setLoadingState(active, lockConfirmButton) {
@@ -251,8 +326,8 @@ function setupParazarSecureSetupIntent(config) {
   }
 
   function resolveSuccessRedirectUrl() {
-    const fallbackUrl = "/instant/confirm";
-    const target = options.successRedirectUrl || fallbackUrl;
+    const fallbackUrl = "https://parazar.co";
+    const target = runtimePaymentUi.successRedirectUrl || fallbackUrl;
 
     try {
       const parsed = new URL(target, window.location.origin);
@@ -337,14 +412,14 @@ function setupParazarSecureSetupIntent(config) {
 
     const payload = await response.json().catch(function () { return {}; });
     if (!response.ok) {
-      throw new Error(payload.error || ("Erreur API (" + response.status + ")"));
+      throw new Error("Action impossible pour le moment");
     }
 
     if (!payload.client_secret) {
-      throw new Error("Le backend n'a pas retourne client_secret");
+      throw new Error("Action impossible pour le moment");
     }
     if (!/^seti_[^_]+_secret_/.test(String(payload.client_secret))) {
-      throw new Error("Le backend doit retourner un SetupIntent (client_secret seti_...)");
+      throw new Error("Action impossible pour le moment");
     }
 
     if (typeof options.onIntentCreated === "function") {
@@ -358,7 +433,7 @@ function setupParazarSecureSetupIntent(config) {
     await loadStripeJs();
 
     if (!window.Stripe) {
-      throw new Error("Stripe.js indisponible");
+      throw new Error("Service de paiement indisponible");
     }
 
     stripeInstance = stripeInstance || window.Stripe(options.stripePublicKey);
@@ -442,7 +517,7 @@ function setupParazarSecureSetupIntent(config) {
     );
     paymentOptions.business = Object.assign(
       {},
-      { name: options.walletMerchantName || "PARAZAR" },
+      { name: runtimePaymentUi.walletMerchantName || "PARAZAR" },
       userPaymentOptions.business || {}
     );
 
@@ -484,20 +559,20 @@ function setupParazarSecureSetupIntent(config) {
     if (ui.confirmButton) {
       ui.confirmButton.disabled = true;
       ui.confirmButton.style.display = "none";
-      ui.confirmButton.textContent = options.confirmButtonLabel;
     }
     setLoadingState(true, false);
     showError("");
+    applyClientTypeSettings("u");
 
     try {
       const checkinId = resolveCheckinId();
       if (!checkinId) {
-        throw new Error("checkin_id introuvable dans l'URL");
+        throw new Error("Lien invalide ou expiré");
       }
       currentCheckinId = checkinId;
 
       const intentPayload = await createSetupIntent(checkinId);
-      updatePreauthorizationLabel();
+      applyClientTypeSettings(intentPayload.client_type);
       await mountPaymentElement(intentPayload.client_secret);
       openModal();
       if (ui.confirmButton) {
@@ -506,11 +581,7 @@ function setupParazarSecureSetupIntent(config) {
       }
     } catch (error) {
       const isNetworkFetchError = error instanceof TypeError && /fetch/i.test(String(error.message || ""));
-      const errorMessage =
-        isNetworkFetchError
-          ? "Connexion API impossible (CORS, reseau ou certificat)."
-          : (error && error.message ? error.message : "Erreur");
-      showError(errorMessage);
+      showError(isNetworkFetchError ? "Connexion impossible. Réessaie." : "Une erreur est survenue. Réessaie.");
       if (ui.modal && !ui.modal.classList.contains("parazar-open")) {
         openModal();
       }
@@ -542,7 +613,7 @@ function setupParazarSecureSetupIntent(config) {
       const result = await stripeInstance.confirmSetup(confirmSetupParams);
 
       if (result.error) {
-        throw new Error(result.error.message || "Echec de l'enregistrement");
+        throw new Error("Impossible de confirmer pour le moment");
       }
 
       const status = result.setupIntent && result.setupIntent.status
@@ -563,9 +634,9 @@ function setupParazarSecureSetupIntent(config) {
         return;
       }
 
-      showError("Statut Stripe inattendu: " + status);
+      showError("Confirmation en attente. Réessaie dans quelques instants.");
     } catch (error) {
-      showError(error && error.message ? error.message : "Erreur");
+      showError("Impossible de confirmer pour le moment");
       if (typeof options.onError === "function") {
         options.onError(error);
       }
@@ -585,6 +656,8 @@ function setupParazarSecureSetupIntent(config) {
       closeModal();
     }
   }
+
+  applyClientTypeSettings("u");
 
   if (ui.confirmButton) {
     ui.confirmButton.disabled = true;

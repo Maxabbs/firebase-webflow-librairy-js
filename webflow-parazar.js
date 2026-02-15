@@ -105,8 +105,8 @@ function ensureParazarSecureModal(options) {
       ".parazar-secure-preauth{margin:0 36px 10px 0;color:#334155;font-size:14px;line-height:1.4;font-weight:500}",
       ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}",
       ".parazar-secure-error[hidden]{display:none}",
-      ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #1d4ed8;border-radius:10px;background:#2563eb;color:#ffffff;font-size:15px;cursor:pointer;transition:all .16s ease}",
-      ".parazar-secure-confirm:hover{background:#1d4ed8}",
+      ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #c0f333;border-radius:10px;background:#c0f333;color:#0b0b0b;font-size:15px;cursor:pointer;transition:all .16s ease}",
+      ".parazar-secure-confirm:hover{background:#b7eb33}",
       ".parazar-secure-confirm:disabled{opacity:.45;cursor:not-allowed}",
       "@media (max-width:480px){.parazar-secure-modal{padding:10px}.parazar-secure-panel{padding:14px;border-radius:12px}}"
     ].join("");
@@ -304,7 +304,7 @@ function setupParazarSecureSetupIntent(config) {
     const defaultAppearance = {
       theme: "stripe",
       variables: {
-        colorPrimary: "#2563eb",
+        colorPrimary: "#000000",
         colorBackground: "#ffffff",
         colorText: "#111827",
         colorDanger: "#dc2626",
@@ -320,13 +320,15 @@ function setupParazarSecureSetupIntent(config) {
           border: "1px solid #d1d5db"
         },
         ".Tab": {
-          backgroundColor: "#f8fafc",
-          color: "#111827",
-          border: "1px solid #d1d5db"
+          backgroundColor: "#0b0b0b",
+          color: "#ffffff",
+          border: "1px solid #0b0b0b"
         },
         ".Tab--selected": {
-          borderColor: "#2563eb",
-          boxShadow: "0 0 0 1px #2563eb"
+          backgroundColor: "#000000",
+          color: "#ffffff",
+          borderColor: "#000000",
+          boxShadow: "0 0 0 1px #000000"
         }
       }
     };

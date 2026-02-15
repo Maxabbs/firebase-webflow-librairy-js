@@ -157,7 +157,8 @@ function setupParazarSecurePayment(config) {
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     redirectIfMissingId: "",
-    createRequestBody: function () { return null; }
+    createRequestBody: function () { return null; },
+    paymentElementOptions: {}
   }, config || {});
 
   if (!options.stripePublicKey) {
@@ -277,7 +278,21 @@ function setupParazarSecurePayment(config) {
     }
 
     elementsInstance = stripeInstance.elements({ clientSecret: clientSecret });
-    paymentElement = elementsInstance.create("payment");
+    const userPaymentOptions = options.paymentElementOptions && typeof options.paymentElementOptions === "object"
+      ? options.paymentElementOptions
+      : {};
+    const paymentOptions = Object.assign(
+      {},
+      { wallets: { applePay: "auto", googlePay: "auto" } },
+      userPaymentOptions
+    );
+    paymentOptions.wallets = Object.assign(
+      {},
+      { applePay: "auto", googlePay: "auto" },
+      userPaymentOptions.wallets || {}
+    );
+
+    paymentElement = elementsInstance.create("payment", paymentOptions);
     paymentElement.mount("#parazar-payment-element");
   }
 

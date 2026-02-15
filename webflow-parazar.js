@@ -117,19 +117,19 @@ function ensureParazarSecureModal(options) {
   if (!modal) {
     modal = document.createElement("div");
     modal.id = modalId;
-    modal.className = "parazar-secure-modal";
-    modal.setAttribute("aria-hidden", "true");
-    modal.innerHTML = [
-      '<div class="parazar-secure-panel" role="dialog" aria-modal="true" aria-label="Paiement sécurisé">',
-      '<button id="' + closeButtonId + '" class="parazar-secure-close" type="button" aria-label="Fermer">x</button>',
-      '<div id="' + preauthTextId + '" class="parazar-secure-preauth"></div>',
-      '<div id="' + errorId + '" class="parazar-secure-error" hidden></div>',
-      '<div id="' + paymentElementId + '"></div>',
-      '<button id="' + confirmButtonId + '" class="parazar-secure-confirm" type="button"></button>',
-      "</div>"
-    ].join("");
     document.body.appendChild(modal);
   }
+  modal.className = "parazar-secure-modal";
+  modal.setAttribute("aria-hidden", "true");
+  modal.innerHTML = [
+    '<div class="parazar-secure-panel" role="dialog" aria-modal="true" aria-label="Paiement sécurisé">',
+    '<button id="' + closeButtonId + '" class="parazar-secure-close" type="button" aria-label="Fermer">x</button>',
+    '<div id="' + preauthTextId + '" class="parazar-secure-preauth"></div>',
+    '<div id="' + errorId + '" class="parazar-secure-error" hidden></div>',
+    '<div id="' + paymentElementId + '"></div>',
+    '<button id="' + confirmButtonId + '" class="parazar-secure-confirm" type="button"></button>',
+    "</div>"
+  ].join("");
 
   const confirmButton = document.getElementById(confirmButtonId);
   const preauthNode = document.getElementById(preauthTextId);
@@ -157,6 +157,7 @@ function setupParazarSecurePayment(config) {
     apiBase: "https://backend.parazar.co",
     confirmButtonLabel: "Confirmer ma place",
     preauthorizationLabel: "Pré-autorisation pour PARAZAR",
+    walletMerchantName: "Pré-autorisation pour PARAZAR",
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     redirectIfMissingId: "",
@@ -174,8 +175,10 @@ function setupParazarSecurePayment(config) {
     throw new Error("setupParazarSecurePayment: bouton introuvable #" + options.buttonId);
   }
 
-  if (openButton.__parazarSecureController) {
-    return openButton.__parazarSecureController;
+  if (openButton.__parazarSecureController && typeof openButton.__parazarSecureController.destroy === "function") {
+    openButton.__parazarSecureController.destroy();
+  } else {
+    openButton.__parazarSecureController = null;
   }
 
   const ui = ensureParazarSecureModal(options);
@@ -378,6 +381,11 @@ function setupParazarSecurePayment(config) {
       { applePay: "auto", googlePay: "auto" },
       userPaymentOptions.wallets || {}
     );
+    paymentOptions.business = Object.assign(
+      {},
+      { name: options.walletMerchantName || "PARAZAR" },
+      userPaymentOptions.business || {}
+    );
 
     paymentElement = elementsInstance.create("payment", paymentOptions);
     paymentElement.mount("#parazar-payment-element");
@@ -470,6 +478,18 @@ function setupParazarSecurePayment(config) {
     }
   }
 
+  function onModalBackdropClick(event) {
+    if (event.target === ui.modal) {
+      closeModal();
+    }
+  }
+
+  function onEscapeKeyDown(event) {
+    if (event.key === "Escape" && ui.modal.classList.contains("parazar-open")) {
+      closeModal();
+    }
+  }
+
   if (ui.confirmButton) {
     ui.confirmButton.disabled = true;
     ui.confirmButton.addEventListener("click", onConfirmClick);
@@ -479,23 +499,26 @@ function setupParazarSecurePayment(config) {
     ui.closeButton.addEventListener("click", closeModal);
   }
 
-  ui.modal.addEventListener("click", function (event) {
-    if (event.target === ui.modal) {
-      closeModal();
-    }
-  });
-
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && ui.modal.classList.contains("parazar-open")) {
-      closeModal();
-    }
-  });
+  ui.modal.addEventListener("click", onModalBackdropClick);
+  document.addEventListener("keydown", onEscapeKeyDown);
 
   openButton.addEventListener("click", onOpenClick);
 
   const controller = {
     open: onOpenClick,
-    close: closeModal
+    close: closeModal,
+    destroy: function () {
+      closeModal();
+      openButton.removeEventListener("click", onOpenClick);
+      if (ui.confirmButton) {
+        ui.confirmButton.removeEventListener("click", onConfirmClick);
+      }
+      if (ui.closeButton) {
+        ui.closeButton.removeEventListener("click", closeModal);
+      }
+      ui.modal.removeEventListener("click", onModalBackdropClick);
+      document.removeEventListener("keydown", onEscapeKeyDown);
+    }
   };
 
   openButton.__parazarSecureController = controller;

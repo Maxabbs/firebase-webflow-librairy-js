@@ -52,6 +52,33 @@ function requireUrlPayloadId(redirectUrl = "https://getapp.parazar.co/p") {
   return id;
 }
 
+function isUrlPayloadFormattedId(value) {
+  if (value == null) {
+    return false;
+  }
+  const normalized = String(value).trim();
+  return /^[A-Z]{4}\d{5}$/.test(normalized);
+}
+
+function getUrlPayloadFormattedId() {
+  const id = getUrlPayloadId();
+  if (!id) {
+    return null;
+  }
+  return isUrlPayloadFormattedId(id) ? id : null;
+}
+
+function requireUrlPayloadFormattedId(redirectUrl = "https://getapp.parazar.co/p") {
+  const id = getUrlPayloadFormattedId();
+
+  if (!id) {
+    window.location.replace(redirectUrl);
+    return null;
+  }
+
+  return id;
+}
+
 function loadStripeJs() {
   if (window.Stripe) {
     return Promise.resolve();
@@ -152,6 +179,15 @@ function ensureParazarSecureModal(options) {
 }
 
 function setupParazarSecureSetupIntent(config) {
+  const defaultClientTypeOverrides = {
+    p: {
+      confirmButtonLabel: "Activer mon établissement",
+      preauthorizationLabel: "",
+      walletMerchantName: "Parazar",
+      successRedirectUrl: "pro/confirm"
+    }
+  };
+
   const options = Object.assign({
     buttonId: "secure-btn-id",
     stripePublicKey: "",
@@ -163,6 +199,7 @@ function setupParazarSecureSetupIntent(config) {
     redirectMode: "if_required",
     returnUrl: window.location.href,
     successRedirectUrl: "/instant/confirm",
+    clientTypeOverrides: defaultClientTypeOverrides,
     statusPollIntervalMs: 1000,
     statusPollMaxDurationMs: 120000,
     redirectIfMissingId: "",
@@ -197,6 +234,19 @@ function setupParazarSecureSetupIntent(config) {
   let currentCheckinId = null;
   let statusPollIntervalId = null;
   let statusPollInFlight = false;
+  const clientTypeOverrides = Object.assign(
+    {},
+    defaultClientTypeOverrides,
+    options.clientTypeOverrides && typeof options.clientTypeOverrides === "object"
+      ? options.clientTypeOverrides
+      : {}
+  );
+  let runtimePaymentUi = {
+    confirmButtonLabel: options.confirmButtonLabel,
+    preauthorizationLabel: options.preauthorizationLabel,
+    walletMerchantName: options.walletMerchantName,
+    successRedirectUrl: options.successRedirectUrl
+  };
 
   function showError(message) {
     if (!ui.errorContainer) {
@@ -213,11 +263,36 @@ function setupParazarSecureSetupIntent(config) {
     ui.errorContainer.textContent = message;
   }
 
+  function applyClientTypeSettings(clientType) {
+    const normalizedClientType = String(clientType || "u").trim().toLowerCase();
+    const typeOverrides = clientTypeOverrides[normalizedClientType] && typeof clientTypeOverrides[normalizedClientType] === "object"
+      ? clientTypeOverrides[normalizedClientType]
+      : null;
+
+    runtimePaymentUi = Object.assign(
+      {},
+      {
+        confirmButtonLabel: options.confirmButtonLabel,
+        preauthorizationLabel: options.preauthorizationLabel,
+        walletMerchantName: options.walletMerchantName,
+        successRedirectUrl: options.successRedirectUrl
+      },
+      typeOverrides || {}
+    );
+
+    if (ui.confirmButton) {
+      ui.confirmButton.textContent = runtimePaymentUi.confirmButtonLabel || options.confirmButtonLabel;
+    }
+    updatePreauthorizationLabel();
+  }
+
   function updatePreauthorizationLabel() {
     if (!ui.preauthTextContainer) {
       return;
     }
-    ui.preauthTextContainer.textContent = options.preauthorizationLabel;
+    const label = runtimePaymentUi.preauthorizationLabel || "";
+    ui.preauthTextContainer.textContent = label;
+    ui.preauthTextContainer.style.display = label ? "" : "none";
   }
 
   function setLoadingState(active, lockConfirmButton) {
@@ -251,8 +326,8 @@ function setupParazarSecureSetupIntent(config) {
   }
 
   function resolveSuccessRedirectUrl() {
-    const fallbackUrl = "/instant/confirm";
-    const target = options.successRedirectUrl || fallbackUrl;
+    const fallbackUrl = "https://parazar.co";
+    const target = runtimePaymentUi.successRedirectUrl || fallbackUrl;
 
     try {
       const parsed = new URL(target, window.location.origin);
@@ -442,7 +517,7 @@ function setupParazarSecureSetupIntent(config) {
     );
     paymentOptions.business = Object.assign(
       {},
-      { name: options.walletMerchantName || "PARAZAR" },
+      { name: runtimePaymentUi.walletMerchantName || "PARAZAR" },
       userPaymentOptions.business || {}
     );
 
@@ -484,10 +559,10 @@ function setupParazarSecureSetupIntent(config) {
     if (ui.confirmButton) {
       ui.confirmButton.disabled = true;
       ui.confirmButton.style.display = "none";
-      ui.confirmButton.textContent = options.confirmButtonLabel;
     }
     setLoadingState(true, false);
     showError("");
+    applyClientTypeSettings("u");
 
     try {
       const checkinId = resolveCheckinId();
@@ -497,7 +572,7 @@ function setupParazarSecureSetupIntent(config) {
       currentCheckinId = checkinId;
 
       const intentPayload = await createSetupIntent(checkinId);
-      updatePreauthorizationLabel();
+      applyClientTypeSettings(intentPayload.client_type);
       await mountPaymentElement(intentPayload.client_secret);
       openModal();
       if (ui.confirmButton) {
@@ -585,6 +660,8 @@ function setupParazarSecureSetupIntent(config) {
       closeModal();
     }
   }
+
+  applyClientTypeSettings("u");
 
   if (ui.confirmButton) {
     ui.confirmButton.disabled = true;

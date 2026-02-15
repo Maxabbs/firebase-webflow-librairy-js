@@ -108,7 +108,7 @@ function ensureParazarSecureModal(options) {
     ".parazar-secure-preauth{margin:0 36px 10px 0;color:#ffffff;font-size:14px;line-height:1.4;font-weight:500}",
     ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#2c0d0d;color:#ffb4b4;border:0.5px solid #5a1a1a}",
     ".parazar-secure-error[hidden]{display:none}",
-    ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:0.5px solid #c0f333 !important;border-radius:10px;background:#c0f333 !important;color:#0b0b0b !important;font-size:15px;cursor:pointer;transition:all .16s ease}",
+    ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:0.5px solid #c0f333 !important;border-radius:10px;background:#c0f333 !important;color:#0b0b0b !important;font-size:20px;line-height:20px;cursor:pointer;transition:all .16s ease}",
     ".parazar-secure-confirm:hover{background:#b7eb33 !important}",
     ".parazar-secure-confirm:disabled{opacity:.45;cursor:not-allowed}",
     "@media (max-width:480px){.parazar-secure-modal{padding:10px}.parazar-secure-panel{padding:14px;border-radius:12px}}"

@@ -91,22 +91,22 @@ function ensureParazarSecureModal(options) {
   const errorId = "parazar-secure-error";
   const confirmButtonId = "parazar-secure-confirm";
   const closeButtonId = "parazar-secure-close";
-  const titleId = "parazar-secure-title";
 
   if (!document.getElementById(styleId)) {
     const style = document.createElement("style");
     style.id = styleId;
     style.textContent = [
-      ".parazar-secure-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.36);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}",
+      ".parazar-secure-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.58);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}",
       ".parazar-secure-modal.parazar-open{display:flex}",
-      ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#fff;box-shadow:0 16px 48px rgba(2,6,23,.24)}",
-      ".parazar-secure-title{margin:0 36px 12px 0;font-family:inherit;font-size:22px;line-height:1.2;color:#0f172a}",
-      ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#334155;cursor:pointer;padding:4px 8px}",
-      ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#fee2e2;color:#991b1b}",
+      ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#060606;border:1px solid #202020;box-shadow:0 20px 60px rgba(0,0,0,.55)}",
+      ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#c0f333;cursor:pointer;padding:4px 8px}",
+      ".parazar-secure-close:hover{opacity:.85}",
+      ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#2c0d0d;color:#ff8f8f;border:1px solid #5a1a1a}",
       ".parazar-secure-error[hidden]{display:none}",
-      ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:0;border-radius:10px;background:#0f172a;color:#fff;font-size:15px;cursor:pointer}",
-      ".parazar-secure-confirm:disabled{opacity:.55;cursor:not-allowed}",
-      "@media (max-width:480px){.parazar-secure-modal{padding:10px}.parazar-secure-panel{padding:14px;border-radius:12px}.parazar-secure-title{font-size:19px}}"
+      ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #c0f333;border-radius:10px;background:#060606;color:#c0f333;font-size:15px;cursor:pointer;transition:all .16s ease}",
+      ".parazar-secure-confirm:hover{background:#0c0c0c}",
+      ".parazar-secure-confirm:disabled{opacity:.45;cursor:not-allowed}",
+      "@media (max-width:480px){.parazar-secure-modal{padding:10px}.parazar-secure-panel{padding:14px;border-radius:12px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -118,9 +118,8 @@ function ensureParazarSecureModal(options) {
     modal.className = "parazar-secure-modal";
     modal.setAttribute("aria-hidden", "true");
     modal.innerHTML = [
-      '<div class="parazar-secure-panel" role="dialog" aria-modal="true" aria-labelledby="' + titleId + '">',
+      '<div class="parazar-secure-panel" role="dialog" aria-modal="true" aria-label="Paiement securise">',
       '<button id="' + closeButtonId + '" class="parazar-secure-close" type="button" aria-label="Fermer">x</button>',
-      '<h2 id="' + titleId + '" class="parazar-secure-title"></h2>',
       '<div id="' + errorId + '" class="parazar-secure-error" hidden></div>',
       '<div id="' + paymentElementId + '"></div>',
       '<button id="' + confirmButtonId + '" class="parazar-secure-confirm" type="button"></button>',
@@ -129,11 +128,7 @@ function ensureParazarSecureModal(options) {
     document.body.appendChild(modal);
   }
 
-  const titleNode = document.getElementById(titleId);
   const confirmButton = document.getElementById(confirmButtonId);
-  if (titleNode) {
-    titleNode.textContent = options.modalTitle;
-  }
   if (confirmButton) {
     confirmButton.textContent = options.confirmButtonLabel;
   }
@@ -152,13 +147,14 @@ function setupParazarSecurePayment(config) {
     buttonId: "secure-btn-id",
     stripePublicKey: "",
     apiBase: "https://backend.parazar.co",
-    modalTitle: "Finaliser la securisation",
-    confirmButtonLabel: "Valider la carte",
+    modalTitle: "",
+    confirmButtonLabel: "Confirmer ma place",
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     redirectIfMissingId: "",
     createRequestBody: function () { return null; },
-    paymentElementOptions: {}
+    paymentElementOptions: {},
+    elementAppearance: {}
   }, config || {});
 
   if (!options.stripePublicKey) {
@@ -277,13 +273,55 @@ function setupParazarSecurePayment(config) {
       ui.paymentElementContainer.innerHTML = "";
     }
 
-    elementsInstance = stripeInstance.elements({ clientSecret: clientSecret });
+    const userAppearance = options.elementAppearance && typeof options.elementAppearance === "object"
+      ? options.elementAppearance
+      : {};
+    const defaultAppearance = {
+      theme: "night",
+      variables: {
+        colorPrimary: "#c0f333",
+        colorBackground: "#060606",
+        colorText: "#c0f333",
+        colorDanger: "#ff8f8f",
+        colorSuccess: "#c0f333",
+        colorTextSecondary: "#a8d72c",
+        borderRadius: "10px"
+      },
+      rules: {
+        ".Label": { color: "#c0f333" },
+        ".Input": {
+          backgroundColor: "#0b0b0b",
+          color: "#c0f333",
+          border: "1px solid #272727"
+        },
+        ".Tab": {
+          backgroundColor: "#0b0b0b",
+          color: "#c0f333",
+          border: "1px solid #272727"
+        },
+        ".Tab--selected": {
+          borderColor: "#c0f333",
+          boxShadow: "0 0 0 1px #c0f333"
+        }
+      }
+    };
+
+    elementsInstance = stripeInstance.elements({
+      clientSecret: clientSecret,
+      appearance: Object.assign({}, defaultAppearance, userAppearance, {
+        variables: Object.assign({}, defaultAppearance.variables, userAppearance.variables || {}),
+        rules: Object.assign({}, defaultAppearance.rules, userAppearance.rules || {})
+      })
+    });
     const userPaymentOptions = options.paymentElementOptions && typeof options.paymentElementOptions === "object"
       ? options.paymentElementOptions
       : {};
     const paymentOptions = Object.assign(
       {},
-      { wallets: { applePay: "auto", googlePay: "auto" } },
+      {
+        wallets: { applePay: "auto", googlePay: "auto" },
+        paymentMethodOrder: ["apple_pay", "google_pay", "card"]
+      },
       userPaymentOptions
     );
     paymentOptions.wallets = Object.assign(

@@ -100,15 +100,15 @@ function ensureParazarSecureModal(options) {
     document.head.appendChild(style);
   }
   style.textContent = [
-    ".parazar-secure-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}",
+    ".parazar-secure-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.66);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}",
     ".parazar-secure-modal.parazar-open{display:flex}",
-    ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 20px 60px rgba(2,6,23,.24)}",
-    ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#64748b;cursor:pointer;padding:4px 8px}",
+    ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#0b0b0b;border:0.5px solid #2a2a2a;box-shadow:0 20px 60px rgba(0,0,0,.55)}",
+    ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#ffffff;cursor:pointer;padding:4px 8px}",
     ".parazar-secure-close:hover{opacity:.85}",
-    ".parazar-secure-preauth{margin:0 36px 10px 0;color:#334155;font-size:14px;line-height:1.4;font-weight:500}",
-    ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}",
+    ".parazar-secure-preauth{margin:0 36px 10px 0;color:#ffffff;font-size:14px;line-height:1.4;font-weight:500}",
+    ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#2c0d0d;color:#ffb4b4;border:0.5px solid #5a1a1a}",
     ".parazar-secure-error[hidden]{display:none}",
-    ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #c0f333 !important;border-radius:10px;background:#c0f333 !important;color:#0b0b0b !important;font-size:15px;cursor:pointer;transition:all .16s ease}",
+    ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:0.5px solid #c0f333 !important;border-radius:10px;background:#c0f333 !important;color:#0b0b0b !important;font-size:15px;cursor:pointer;transition:all .16s ease}",
     ".parazar-secure-confirm:hover{background:#b7eb33 !important}",
     ".parazar-secure-confirm:disabled{opacity:.45;cursor:not-allowed}",
     "@media (max-width:480px){.parazar-secure-modal{padding:10px}.parazar-secure-panel{padding:14px;border-radius:12px}}"
@@ -359,44 +359,45 @@ function setupParazarSecureSetupIntent(config) {
       ? options.elementAppearance
       : {};
     const defaultAppearance = {
-      theme: "stripe",
+      theme: "night",
       variables: {
-        colorPrimary: "#000000",
-        colorBackground: "#ffffff",
-        colorText: "#111827",
-        colorDanger: "#dc2626",
-        colorSuccess: "#16a34a",
-        colorTextSecondary: "#6b7280",
+        colorPrimary: "#c0f333",
+        colorBackground: "#0b0b0b",
+        colorText: "#ffffff",
+        colorDanger: "#ffb4b4",
+        colorSuccess: "#c0f333",
+        colorTextSecondary: "#c4c4c4",
+        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
         borderRadius: "10px"
       },
       rules: {
-        ".Label": { color: "#374151" },
+        ".Label": { color: "#ffffff" },
         ".Input": {
-          backgroundColor: "#ffffff",
-          color: "#111827",
-          border: "1px solid #d1d5db"
+          backgroundColor: "#0b0b0b",
+          color: "#ffffff",
+          border: "0.5px solid #2a2a2a"
         },
         ".Tab": {
-          backgroundColor: "#ffffff",
-          color: "#111827",
-          border: "1px solid #d1d5db"
+          backgroundColor: "#0b0b0b",
+          color: "#ffffff",
+          border: "0.5px solid #2a2a2a"
         },
-        ".TabLabel": { color: "#111827" },
-        ".TabIcon": { color: "#6b7280" },
+        ".TabLabel": { color: "#ffffff" },
+        ".TabIcon": { color: "#ffffff" },
         ".Tab--selected": {
-          backgroundColor: "#ffffff",
-          color: "#c0f333",
+          backgroundColor: "#c0f333",
+          color: "#0b0b0b",
           borderColor: "#c0f333",
-          boxShadow: "0 0 0 1px #c0f333"
+          boxShadow: "0 0 0 0.5px #c0f333"
         },
-        ".TabLabel--selected": { color: "#c0f333" },
-        ".TabIcon--selected": { color: "#c0f333" },
+        ".TabLabel--selected": { color: "#0b0b0b" },
+        ".TabIcon--selected": { color: "#0b0b0b" },
         ".Block": {
-          backgroundColor: "#ffffff",
-          color: "#111827",
-          border: "1px solid #d1d5db"
+          backgroundColor: "#0b0b0b",
+          color: "#ffffff",
+          border: "0.5px solid #2a2a2a"
         },
-        ".BlockDivider": { backgroundColor: "#e5e7eb" }
+        ".BlockDivider": { backgroundColor: "#2a2a2a" }
       }
     };
 

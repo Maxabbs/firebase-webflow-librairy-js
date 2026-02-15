@@ -162,7 +162,7 @@ function setupParazarSecureSetupIntent(config) {
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     returnUrl: window.location.href,
-    successRedirectUrl: "https://parazar-suivez-vos-envies.webflow.io/instant/confirm",
+    successRedirectUrl: "/instant/confirm",
     statusPollIntervalMs: 1000,
     statusPollMaxDurationMs: 120000,
     redirectIfMissingId: "",
@@ -250,6 +250,21 @@ function setupParazarSecureSetupIntent(config) {
     statusPollInFlight = false;
   }
 
+  function resolveSuccessRedirectUrl() {
+    const fallbackUrl = "/instant/confirm";
+    const target = options.successRedirectUrl || fallbackUrl;
+
+    try {
+      const parsed = new URL(target, window.location.origin);
+      if (/\.webflow\.io$/i.test(parsed.hostname) && /^www\./i.test(parsed.hostname)) {
+        parsed.hostname = parsed.hostname.replace(/^www\./i, "");
+      }
+      return parsed.toString();
+    } catch (_) {
+      return fallbackUrl;
+    }
+  }
+
   function startStatusPolling(checkinId) {
     if (!checkinId) {
       return;
@@ -273,7 +288,7 @@ function setupParazarSecureSetupIntent(config) {
 
         if (response.status === 200) {
           stopStatusPolling();
-          window.location.href = options.successRedirectUrl;
+          window.location.href = resolveSuccessRedirectUrl();
           return;
         }
 

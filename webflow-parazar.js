@@ -93,25 +93,26 @@ function ensureParazarSecureModal(options) {
   const confirmButtonId = "parazar-secure-confirm";
   const closeButtonId = "parazar-secure-close";
 
-  if (!document.getElementById(styleId)) {
-    const style = document.createElement("style");
+  let style = document.getElementById(styleId);
+  if (!style) {
+    style = document.createElement("style");
     style.id = styleId;
-    style.textContent = [
-      ".parazar-secure-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}",
-      ".parazar-secure-modal.parazar-open{display:flex}",
-      ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 20px 60px rgba(2,6,23,.24)}",
-      ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#64748b;cursor:pointer;padding:4px 8px}",
-      ".parazar-secure-close:hover{opacity:.85}",
-      ".parazar-secure-preauth{margin:0 36px 10px 0;color:#334155;font-size:14px;line-height:1.4;font-weight:500}",
-      ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}",
-      ".parazar-secure-error[hidden]{display:none}",
-      ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #c0f333;border-radius:10px;background:#c0f333;color:#0b0b0b;font-size:15px;cursor:pointer;transition:all .16s ease}",
-      ".parazar-secure-confirm:hover{background:#b7eb33}",
-      ".parazar-secure-confirm:disabled{opacity:.45;cursor:not-allowed}",
-      "@media (max-width:480px){.parazar-secure-modal{padding:10px}.parazar-secure-panel{padding:14px;border-radius:12px}}"
-    ].join("");
     document.head.appendChild(style);
   }
+  style.textContent = [
+    ".parazar-secure-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(15,23,42,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}",
+    ".parazar-secure-modal.parazar-open{display:flex}",
+    ".parazar-secure-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;border-radius:16px;padding:20px;background:#ffffff;border:1px solid #e5e7eb;box-shadow:0 20px 60px rgba(2,6,23,.24)}",
+    ".parazar-secure-close{position:absolute;top:8px;right:10px;border:0;background:transparent;font-size:28px;line-height:1;color:#64748b;cursor:pointer;padding:4px 8px}",
+    ".parazar-secure-close:hover{opacity:.85}",
+    ".parazar-secure-preauth{margin:0 36px 10px 0;color:#334155;font-size:14px;line-height:1.4;font-weight:500}",
+    ".parazar-secure-error{margin:8px 0 14px 0;padding:10px 12px;border-radius:10px;font-size:14px;line-height:1.4;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}",
+    ".parazar-secure-error[hidden]{display:none}",
+    ".parazar-secure-confirm{width:100%;margin-top:16px;padding:12px 14px;border:1px solid #c0f333 !important;border-radius:10px;background:#c0f333 !important;color:#0b0b0b !important;font-size:15px;cursor:pointer;transition:all .16s ease}",
+    ".parazar-secure-confirm:hover{background:#b7eb33 !important}",
+    ".parazar-secure-confirm:disabled{opacity:.45;cursor:not-allowed}",
+    "@media (max-width:480px){.parazar-secure-modal{padding:10px}.parazar-secure-panel{padding:14px;border-radius:12px}}"
+  ].join("");
 
   let modal = document.getElementById(modalId);
   if (!modal) {
@@ -161,6 +162,9 @@ function setupParazarSecureSetupIntent(config) {
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     returnUrl: window.location.href,
+    successRedirectUrl: "https://www.parazar.co/instant/confirm",
+    statusPollIntervalMs: 1000,
+    statusPollMaxDurationMs: 120000,
     redirectIfMissingId: "",
     createRequestBody: function () { return null; },
     paymentElementOptions: {},
@@ -190,6 +194,9 @@ function setupParazarSecureSetupIntent(config) {
   let elementsInstance = null;
   let paymentElement = null;
   let isBusy = false;
+  let currentCheckinId = null;
+  let statusPollIntervalId = null;
+  let statusPollInFlight = false;
 
   function showError(message) {
     if (!ui.errorContainer) {
@@ -233,6 +240,56 @@ function setupParazarSecureSetupIntent(config) {
     ui.modal.classList.remove("parazar-open");
     ui.modal.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
+  }
+
+  function stopStatusPolling() {
+    if (statusPollIntervalId) {
+      window.clearInterval(statusPollIntervalId);
+      statusPollIntervalId = null;
+    }
+    statusPollInFlight = false;
+  }
+
+  function startStatusPolling(checkinId) {
+    if (!checkinId) {
+      return;
+    }
+
+    stopStatusPolling();
+    const startedAt = Date.now();
+    const maxDurationMs = Number(options.statusPollMaxDurationMs);
+    const hasTimeout = Number.isFinite(maxDurationMs) && maxDurationMs > 0;
+
+    statusPollIntervalId = window.setInterval(async function () {
+      if (statusPollInFlight) {
+        return;
+      }
+      statusPollInFlight = true;
+
+      try {
+        const response = await fetch(options.apiBase + "/api/parazar/secure/" + encodeURIComponent(checkinId), {
+          method: "GET"
+        });
+
+        if (response.status === 200) {
+          stopStatusPolling();
+          window.location.href = options.successRedirectUrl;
+          return;
+        }
+
+        if (hasTimeout && Date.now() - startedAt >= maxDurationMs) {
+          stopStatusPolling();
+          closeModal();
+        }
+      } catch (_) {
+        if (hasTimeout && Date.now() - startedAt >= maxDurationMs) {
+          stopStatusPolling();
+          closeModal();
+        }
+      } finally {
+        statusPollInFlight = false;
+      }
+    }, options.statusPollIntervalMs);
   }
 
   function resolveCheckinId() {
@@ -320,16 +377,26 @@ function setupParazarSecureSetupIntent(config) {
           border: "1px solid #d1d5db"
         },
         ".Tab": {
-          backgroundColor: "#0b0b0b",
-          color: "#ffffff",
-          border: "1px solid #0b0b0b"
+          backgroundColor: "#ffffff",
+          color: "#111827",
+          border: "1px solid #d1d5db"
         },
+        ".TabLabel": { color: "#111827" },
+        ".TabIcon": { color: "#6b7280" },
         ".Tab--selected": {
-          backgroundColor: "#000000",
-          color: "#ffffff",
-          borderColor: "#000000",
-          boxShadow: "0 0 0 1px #000000"
-        }
+          backgroundColor: "#ffffff",
+          color: "#c0f333",
+          borderColor: "#c0f333",
+          boxShadow: "0 0 0 1px #c0f333"
+        },
+        ".TabLabel--selected": { color: "#c0f333" },
+        ".TabIcon--selected": { color: "#c0f333" },
+        ".Block": {
+          backgroundColor: "#ffffff",
+          color: "#111827",
+          border: "1px solid #d1d5db"
+        },
+        ".BlockDivider": { backgroundColor: "#e5e7eb" }
       }
     };
 
@@ -347,7 +414,8 @@ function setupParazarSecureSetupIntent(config) {
       {},
       {
         wallets: { applePay: "auto", googlePay: "auto" },
-        paymentMethodOrder: ["apple_pay", "google_pay", "card"]
+        paymentMethodOrder: ["apple_pay", "google_pay", "card"],
+        terms: { card: "never", applePay: "always", googlePay: "always" }
       },
       userPaymentOptions
     );
@@ -363,7 +431,33 @@ function setupParazarSecureSetupIntent(config) {
     );
 
     paymentElement = elementsInstance.create("payment", paymentOptions);
-    paymentElement.mount("#parazar-payment-element");
+
+    await new Promise(function (resolve, reject) {
+      let settled = false;
+      const settleOnce = function (fn) {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        fn();
+      };
+
+      const timeoutId = window.setTimeout(function () {
+        settleOnce(resolve);
+      }, 2500);
+
+      paymentElement.on("ready", function () {
+        window.clearTimeout(timeoutId);
+        settleOnce(resolve);
+      });
+
+      try {
+        paymentElement.mount("#parazar-payment-element");
+      } catch (error) {
+        window.clearTimeout(timeoutId);
+        settleOnce(function () { reject(error); });
+      }
+    });
   }
 
   async function onOpenClick() {
@@ -384,6 +478,7 @@ function setupParazarSecureSetupIntent(config) {
       if (!checkinId) {
         throw new Error("checkin_id introuvable dans l'URL");
       }
+      currentCheckinId = checkinId;
 
       const intentPayload = await createSetupIntent(checkinId);
       updatePreauthorizationLabel();
@@ -446,6 +541,8 @@ function setupParazarSecureSetupIntent(config) {
       }
 
       if (status === "succeeded" || status === "processing") {
+        const checkinId = currentCheckinId || resolveCheckinId();
+        startStatusPolling(checkinId);
         closeModal();
         return;
       }
@@ -491,6 +588,7 @@ function setupParazarSecureSetupIntent(config) {
     open: onOpenClick,
     close: closeModal,
     destroy: function () {
+      stopStatusPolling();
       closeModal();
       openButton.removeEventListener("click", onOpenClick);
       if (ui.confirmButton) {

@@ -712,7 +712,7 @@ function setupParazarProReservationForm(config) {
     minPeoplePerTable: 6,
     maxPeoplePerTable: 10,
     minHour: "18:00",
-    maxHour: "21:30",
+    maxHour: "23:55",
     intervalMinutes: 15,
     locale: "fr-FR",
     onSubmitSuccess: null,

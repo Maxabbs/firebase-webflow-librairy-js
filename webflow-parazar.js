@@ -712,7 +712,7 @@ function setupParazarProReservationForm(config) {
     minPeoplePerTable: 6,
     maxPeoplePerTable: 10,
     minHour: "18:00",
-    maxHour: "21:30",
+    maxHour: "23:55",
     intervalMinutes: 15,
     locale: "fr-FR",
     onSubmitSuccess: null,
@@ -794,28 +794,28 @@ function setupParazarProReservationForm(config) {
     style.id = STYLE_ID;
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
-      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(130% 120% at 50% 0%,#171717 0%,#090909 52%,#000 100%);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
-      ".pzr-pro-card{width:min(560px,96vw);border-radius:20px;border:0.5px solid rgba(255,255,255,.16);background:linear-gradient(165deg,#121212 0%,#090909 100%);box-shadow:0 28px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);padding:24px}",
-      ".pzr-pro-title{margin:0 0 16px 0;font-size:clamp(34px,4.8vw,56px);line-height:1.02;font-weight:650;letter-spacing:-0.02em;color:#fff}",
-      ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.02);padding:14px;backdrop-filter:blur(2px)}",
-      ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:76px;padding:0 18px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#111;margin-bottom:12px;font-size:clamp(20px,3.8vw,32px);font-weight:520;letter-spacing:-0.01em;line-height:1.1}",
+      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(120% 90% at 50% -8%,#232323 0%,#101010 48%,#050505 78%,#000 100%);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
+      ".pzr-pro-card{width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:0 30px 78px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.08);padding:22px}",
+      ".pzr-pro-title{margin:0 0 16px 0;font-size:clamp(26px,3.4vw,38px);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3}",
+      ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
+      ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 18px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;margin-bottom:12px;font-size:clamp(19px,3.2vw,29px);font-weight:520;letter-spacing:-0.005em;line-height:1.1}",
       ".pzr-pro-row:last-child{margin-bottom:0}",
       ".pzr-pro-stepper{display:flex;align-items:center;gap:8px}",
       ".pzr-pro-step{width:42px;height:42px;border:0;border-radius:10px;background:transparent;color:#fff;font-family:inherit;font-size:34px;font-weight:400;line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}",
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
       ".pzr-pro-time-wrap{position:relative;margin-bottom:12px}",
-      ".pzr-pro-time-select{width:100%;height:82px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#111;color:#fff;font-family:inherit;font-size:clamp(28px,5.4vw,52px);font-weight:620;letter-spacing:-0.02em;padding:0 56px 0 18px;appearance:none;cursor:pointer;line-height:1.1}",
+      ".pzr-pro-time-select{width:100%;height:78px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;color:#fff;font-family:inherit;font-size:clamp(26px,4.5vw,42px);font-weight:620;letter-spacing:-0.02em;padding:0 56px 0 18px;appearance:none;cursor:pointer;line-height:1.1}",
       ".pzr-pro-time-select:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
-      ".pzr-pro-time-select.pzr-pro-time-empty{font-size:clamp(16px,2.7vw,22px);font-weight:500;color:#c7c7c7;letter-spacing:0;line-height:1.2}",
+      ".pzr-pro-time-select.pzr-pro-time-empty{font-size:clamp(14px,2.2vw,18px);font-weight:500;color:#b9b9b9;letter-spacing:.01em;line-height:1.2}",
       ".pzr-pro-time-wrap::after{content:'▾';position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:18px;color:#fff;pointer-events:none}",
-      ".pzr-pro-submit{width:100%;height:76px;border:0;border-radius:14px;background:#c0f333;color:#0b0b0b;font-family:inherit;font-size:clamp(24px,4.6vw,40px);font-weight:650;letter-spacing:-0.015em;cursor:pointer;transition:transform .14s ease,filter .14s ease}",
+      ".pzr-pro-submit{width:100%;height:64px;border:0;border-radius:13px;background:#c0f333;color:#0b0b0b;font-family:inherit;font-size:clamp(19px,3vw,28px);font-weight:620;letter-spacing:-0.01em;cursor:pointer;box-shadow:0 10px 28px rgba(192,243,51,.26),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .14s ease,filter .14s ease}",
       ".pzr-pro-submit:hover{filter:brightness(1.03)}",
       ".pzr-pro-submit:active{transform:translateY(1px)}",
       ".pzr-pro-submit:disabled{opacity:.55;cursor:not-allowed}",
       ".pzr-pro-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-pro-status.success{color:#c0f333}",
       ".pzr-pro-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:66px;padding:0 14px}.pzr-pro-step{width:36px;height:36px;font-size:28px}.pzr-pro-time-select{height:72px;padding:0 48px 0 14px}.pzr-pro-submit{height:66px}}"
+      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:62px;padding:0 14px}.pzr-pro-step{width:34px;height:34px;font-size:26px}.pzr-pro-time-select{height:68px;padding:0 46px 0 14px}.pzr-pro-submit{height:58px;font-size:24px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -898,12 +898,12 @@ function setupParazarProReservationForm(config) {
     if (startMinutes > maxHourMinutes) {
       const option = document.createElement("option");
       option.value = "";
-      option.textContent = "Aucun créneau";
+      option.textContent = "Fini pour aujourd'hui";
       ui.hourSelect.appendChild(option);
       ui.hourSelect.classList.add("pzr-pro-time-empty");
       ui.hourSelect.disabled = true;
       ui.submitButton.disabled = true;
-      setStatus(ui, "Aucun créneau disponible.", "error");
+      setStatus(ui, "", "");
       return;
     }
 

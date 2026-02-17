@@ -714,6 +714,7 @@ function setupParazarProReservationForm(config) {
     minHour: "18:00",
     maxHour: "23:55",
     intervalMinutes: 15,
+    startOffsetIntervals: 0,
     locale: "fr-FR",
     onSubmitSuccess: null,
     onSubmitError: null
@@ -738,11 +739,26 @@ function setupParazarProReservationForm(config) {
     return String(h).padStart(2, "0") + "h" + String(m).padStart(2, "0");
   }
 
-  function getRoundedNowMinutes() {
+  const minTablesValue = Math.max(1, Number(options.minTables) || 1);
+  const minPeoplePerTableValue = Math.max(1, Number(options.minPeoplePerTable) || 6);
+  const maxPeoplePerTableValue = Math.max(
+    minPeoplePerTableValue,
+    Number(options.maxPeoplePerTable) || 10
+  );
+  const intervalMinutesValue = Math.max(1, Number(options.intervalMinutes) || 15);
+  const startOffsetIntervalsValue = Math.max(0, Math.floor(Number(options.startOffsetIntervals) || 0));
+  const minHourMinutesValue = toMinutes(options.minHour);
+  const maxHourMinutesValue = toMinutes(options.maxHour);
+  const resolvedMinHourMinutes = Number.isFinite(minHourMinutesValue) ? minHourMinutesValue : toMinutes("18:00");
+  const resolvedMaxHourMinutes = Number.isFinite(maxHourMinutesValue)
+    ? Math.max(resolvedMinHourMinutes, maxHourMinutesValue)
+    : toMinutes("23:55");
+
+  function getEarliestSlotMinutes() {
     const now = new Date();
-    const minutes = now.getHours() * 60 + now.getMinutes();
-    const step = Math.max(1, Number(options.intervalMinutes) || 15);
-    return Math.ceil(minutes / step) * step;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+    const withOffset = nowMinutes + (startOffsetIntervalsValue * intervalMinutesValue);
+    return Math.ceil(withOffset / intervalMinutesValue) * intervalMinutesValue;
   }
 
   function getPayloadIdFromUrl() {
@@ -804,7 +820,7 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-step{width:42px;height:42px;border:0;border-radius:10px;background:transparent;color:#fff;font-family:inherit;font-size:34px;font-weight:400;line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}",
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
       ".pzr-pro-time-wrap{position:relative;margin-bottom:12px}",
-      ".pzr-pro-time-select{width:100%;height:78px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;color:#fff;font-family:inherit;font-size:clamp(26px,4.5vw,42px);font-weight:620;letter-spacing:-0.02em;padding:0 56px 0 18px;appearance:none;cursor:pointer;line-height:1.1}",
+      ".pzr-pro-time-select{width:100%;height:78px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;color:#fff;font-family:inherit;font-size:clamp(19px,3.2vw,29px);font-weight:520;letter-spacing:-0.005em;padding:0 56px 0 18px;appearance:none;cursor:pointer;line-height:1.1}",
       ".pzr-pro-time-select:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
       ".pzr-pro-time-select.pzr-pro-time-empty{font-size:clamp(14px,2.2vw,18px);font-weight:500;color:#b9b9b9;letter-spacing:.01em;line-height:1.2}",
       ".pzr-pro-time-wrap::after{content:'▾';position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:18px;color:#fff;pointer-events:none}",
@@ -890,12 +906,10 @@ function setupParazarProReservationForm(config) {
     ui.hourSelect.innerHTML = "";
     ui.hourSelect.classList.remove("pzr-pro-time-empty");
 
-    const minHourMinutes = toMinutes(options.minHour);
-    const maxHourMinutes = toMinutes(options.maxHour);
-    const roundedNow = getRoundedNowMinutes();
-    const startMinutes = Math.max(minHourMinutes, roundedNow);
+    const roundedNow = getEarliestSlotMinutes();
+    const startMinutes = Math.max(resolvedMinHourMinutes, roundedNow);
 
-    if (startMinutes > maxHourMinutes) {
+    if (startMinutes > resolvedMaxHourMinutes) {
       const option = document.createElement("option");
       option.value = "";
       option.textContent = "Fini pour aujourd'hui";
@@ -907,10 +921,19 @@ function setupParazarProReservationForm(config) {
       return;
     }
 
-    const step = Math.max(1, Number(options.intervalMinutes) || 15);
-    for (let minutes = startMinutes; minutes <= maxHourMinutes; minutes += step) {
+    let lastAddedMinutes = null;
+    for (let minutes = startMinutes; minutes <= resolvedMaxHourMinutes; minutes += intervalMinutesValue) {
       const option = document.createElement("option");
       const label = toHourLabel(minutes);
+      option.value = label;
+      option.textContent = label;
+      ui.hourSelect.appendChild(option);
+      lastAddedMinutes = minutes;
+    }
+
+    if (lastAddedMinutes !== resolvedMaxHourMinutes) {
+      const option = document.createElement("option");
+      const label = toHourLabel(resolvedMaxHourMinutes);
       option.value = label;
       option.textContent = label;
       ui.hourSelect.appendChild(option);
@@ -922,11 +945,8 @@ function setupParazarProReservationForm(config) {
   }
 
   const state = {
-    tableNumber: Math.max(1, Number(options.minTables) || 1),
-    peopleNumberPerTable: Math.max(
-      Number(options.minPeoplePerTable) || 6,
-      6
-    )
+    tableNumber: minTablesValue,
+    peopleNumberPerTable: minPeoplePerTableValue
   };
   const payloadId = getPayloadIdFromUrl();
 
@@ -1005,7 +1025,7 @@ function setupParazarProReservationForm(config) {
   buildTimeOptions(ui);
 
   ui.tablesMinus.addEventListener("click", function () {
-    state.tableNumber = Math.max(1, state.tableNumber - 1);
+    state.tableNumber = Math.max(minTablesValue, state.tableNumber - 1);
     renderTables(ui);
   });
 
@@ -1015,12 +1035,12 @@ function setupParazarProReservationForm(config) {
   });
 
   ui.peopleMinus.addEventListener("click", function () {
-    state.peopleNumberPerTable = Math.max(Number(options.minPeoplePerTable) || 6, state.peopleNumberPerTable - 1);
+    state.peopleNumberPerTable = Math.max(minPeoplePerTableValue, state.peopleNumberPerTable - 1);
     renderPeople(ui);
   });
 
   ui.peoplePlus.addEventListener("click", function () {
-    state.peopleNumberPerTable = Math.min(Number(options.maxPeoplePerTable) || 10, state.peopleNumberPerTable + 1);
+    state.peopleNumberPerTable = Math.min(maxPeoplePerTableValue, state.peopleNumberPerTable + 1);
     renderPeople(ui);
   });
 

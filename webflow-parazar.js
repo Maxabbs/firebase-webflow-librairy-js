@@ -1037,3 +1037,14 @@ function setupParazarProReservationForm(config) {
     }
   };
 }
+
+if (typeof window !== "undefined") {
+  window.getUrlPayloadId = getUrlPayloadId;
+  window.requireUrlPayloadId = requireUrlPayloadId;
+  window.isUrlPayloadFormattedId = isUrlPayloadFormattedId;
+  window.getUrlPayloadFormattedId = getUrlPayloadFormattedId;
+  window.requireUrlPayloadFormattedId = requireUrlPayloadFormattedId;
+  window.setupParazarSecureSetupIntent = setupParazarSecureSetupIntent;
+  window.setupParazarSecurePayment = setupParazarSecurePayment;
+  window.setupParazarProReservationForm = setupParazarProReservationForm;
+}

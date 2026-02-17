@@ -730,6 +730,9 @@ function setupParazarProReservationForm(config) {
     if (!Number.isFinite(h) || !Number.isFinite(m)) {
       return null;
     }
+    if (h < 0 || h > 23 || m < 0 || m > 59) {
+      return null;
+    }
     return h * 60 + m;
   }
 
@@ -750,15 +753,54 @@ function setupParazarProReservationForm(config) {
   const minHourMinutesValue = toMinutes(options.minHour);
   const maxHourMinutesValue = toMinutes(options.maxHour);
   const resolvedMinHourMinutes = Number.isFinite(minHourMinutesValue) ? minHourMinutesValue : toMinutes("18:00");
-  const resolvedMaxHourMinutes = Number.isFinite(maxHourMinutesValue)
-    ? Math.max(resolvedMinHourMinutes, maxHourMinutesValue)
-    : toMinutes("23:55");
+  const resolvedMaxHourMinutes = Number.isFinite(maxHourMinutesValue) ? maxHourMinutesValue : toMinutes("23:55");
 
-  function getEarliestSlotMinutes() {
-    const now = new Date();
-    const nowMinutes = now.getHours() * 60 + now.getMinutes();
-    const withOffset = nowMinutes + (startOffsetIntervalsValue * intervalMinutesValue);
-    return Math.ceil(withOffset / intervalMinutesValue) * intervalMinutesValue;
+  function buildDateAtMinutes(referenceDate, minutesOfDay, dayOffset) {
+    const date = new Date(referenceDate);
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + dayOffset);
+    date.setMinutes(minutesOfDay, 0, 0);
+    return date;
+  }
+
+  function getMinutesOfDay(date) {
+    return date.getHours() * 60 + date.getMinutes();
+  }
+
+  function ceilDateToInterval(date) {
+    const base = new Date(date);
+    base.setSeconds(0, 0);
+    const totalMinutes = getMinutesOfDay(base);
+    const roundedMinutes = Math.ceil(totalMinutes / intervalMinutesValue) * intervalMinutesValue;
+    const dayShift = Math.floor(roundedMinutes / 1440);
+    const minuteInDay = ((roundedMinutes % 1440) + 1440) % 1440;
+    base.setHours(0, 0, 0, 0);
+    base.setDate(base.getDate() + dayShift);
+    base.setMinutes(minuteInDay, 0, 0);
+    return base;
+  }
+
+  function resolveBookingWindow(now) {
+    const isOvernightWindow = resolvedMaxHourMinutes < resolvedMinHourMinutes;
+    if (!isOvernightWindow) {
+      return {
+        start: buildDateAtMinutes(now, resolvedMinHourMinutes, 0),
+        end: buildDateAtMinutes(now, resolvedMaxHourMinutes, 0)
+      };
+    }
+
+    const todayMax = buildDateAtMinutes(now, resolvedMaxHourMinutes, 0);
+    if (now.getTime() < todayMax.getTime()) {
+      return {
+        start: buildDateAtMinutes(now, resolvedMinHourMinutes, -1),
+        end: todayMax
+      };
+    }
+
+    return {
+      start: buildDateAtMinutes(now, resolvedMinHourMinutes, 0),
+      end: buildDateAtMinutes(now, resolvedMaxHourMinutes, 1)
+    };
   }
 
   function getPayloadIdFromUrl() {
@@ -810,8 +852,9 @@ function setupParazarProReservationForm(config) {
     style.id = STYLE_ID;
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
-      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(120% 90% at 50% -8%,#232323 0%,#101010 48%,#050505 78%,#000 100%);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
-      ".pzr-pro-card{width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:0 30px 78px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.08);padding:22px}",
+      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
+      ".pzr-pro-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px}",
+      ".pzr-pro-card::after{display:none}",
       ".pzr-pro-title{margin:0 0 16px 0;font-size:clamp(26px,3.4vw,38px);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3}",
       ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
       ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 18px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;margin-bottom:12px;font-size:clamp(19px,3.2vw,29px);font-weight:520;letter-spacing:-0.005em;line-height:1.1}",
@@ -906,10 +949,15 @@ function setupParazarProReservationForm(config) {
     ui.hourSelect.innerHTML = "";
     ui.hourSelect.classList.remove("pzr-pro-time-empty");
 
-    const roundedNow = getEarliestSlotMinutes();
-    const startMinutes = Math.max(resolvedMinHourMinutes, roundedNow);
+    const now = new Date();
+    const bookingWindow = resolveBookingWindow(now);
+    const earliestWithOffset = new Date(
+      now.getTime() + (startOffsetIntervalsValue * intervalMinutesValue * 60000)
+    );
+    const baseStart = new Date(Math.max(bookingWindow.start.getTime(), earliestWithOffset.getTime()));
+    const startSlot = ceilDateToInterval(baseStart);
 
-    if (startMinutes > resolvedMaxHourMinutes) {
+    if (startSlot.getTime() > bookingWindow.end.getTime()) {
       const option = document.createElement("option");
       option.value = "";
       option.textContent = "Fini pour aujourd'hui";
@@ -921,19 +969,23 @@ function setupParazarProReservationForm(config) {
       return;
     }
 
-    let lastAddedMinutes = null;
-    for (let minutes = startMinutes; minutes <= resolvedMaxHourMinutes; minutes += intervalMinutesValue) {
+    let lastAddedTimestamp = null;
+    for (
+      let slot = new Date(startSlot);
+      slot.getTime() <= bookingWindow.end.getTime();
+      slot = new Date(slot.getTime() + (intervalMinutesValue * 60000))
+    ) {
       const option = document.createElement("option");
-      const label = toHourLabel(minutes);
+      const label = toHourLabel(getMinutesOfDay(slot));
       option.value = label;
       option.textContent = label;
       ui.hourSelect.appendChild(option);
-      lastAddedMinutes = minutes;
+      lastAddedTimestamp = slot.getTime();
     }
 
-    if (lastAddedMinutes !== resolvedMaxHourMinutes) {
+    if (lastAddedTimestamp !== bookingWindow.end.getTime()) {
       const option = document.createElement("option");
-      const label = toHourLabel(resolvedMaxHourMinutes);
+      const label = toHourLabel(getMinutesOfDay(bookingWindow.end));
       option.value = label;
       option.textContent = label;
       ui.hourSelect.appendChild(option);

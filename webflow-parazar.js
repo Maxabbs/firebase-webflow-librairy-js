@@ -794,24 +794,28 @@ function setupParazarProReservationForm(config) {
     style.id = STYLE_ID;
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
-      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:#000;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
-      ".pzr-pro-card{width:min(460px,96vw);border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b0b0b;box-shadow:0 16px 40px rgba(0,0,0,.45);padding:18px}",
-      ".pzr-pro-title{margin:0 0 14px 0;font-size:42px;line-height:1.05;font-weight:600;color:#fff}",
-      ".pzr-pro-block{border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0f0f0f;padding:10px}",
-      ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#121212;margin-bottom:10px;font-size:18px;font-weight:500}",
+      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:radial-gradient(130% 120% at 50% 0%,#171717 0%,#090909 52%,#000 100%);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
+      ".pzr-pro-card{width:min(560px,96vw);border-radius:20px;border:0.5px solid rgba(255,255,255,.16);background:linear-gradient(165deg,#121212 0%,#090909 100%);box-shadow:0 28px 70px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);padding:24px}",
+      ".pzr-pro-title{margin:0 0 16px 0;font-size:clamp(34px,4.8vw,56px);line-height:1.02;font-weight:650;letter-spacing:-0.02em;color:#fff}",
+      ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.02);padding:14px;backdrop-filter:blur(2px)}",
+      ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:76px;padding:0 18px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#111;margin-bottom:12px;font-size:clamp(20px,3.8vw,32px);font-weight:520;letter-spacing:-0.01em;line-height:1.1}",
       ".pzr-pro-row:last-child{margin-bottom:0}",
-      ".pzr-pro-stepper{display:flex;align-items:center;gap:6px}",
-      ".pzr-pro-step{width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer}",
+      ".pzr-pro-stepper{display:flex;align-items:center;gap:8px}",
+      ".pzr-pro-step{width:42px;height:42px;border:0;border-radius:10px;background:transparent;color:#fff;font-family:inherit;font-size:34px;font-weight:400;line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}",
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
-      ".pzr-pro-time-wrap{position:relative;margin-bottom:10px}",
-      ".pzr-pro-time-select{width:100%;height:58px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#121212;color:#fff;font-size:34px;font-weight:600;padding:0 48px 0 14px;appearance:none;cursor:pointer}",
-      ".pzr-pro-time-wrap::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;color:#fff;pointer-events:none}",
-      ".pzr-pro-submit{width:100%;height:56px;border:0;border-radius:10px;background:#c0f333;color:#000;font-size:32px;font-weight:600;cursor:pointer}",
+      ".pzr-pro-time-wrap{position:relative;margin-bottom:12px}",
+      ".pzr-pro-time-select{width:100%;height:82px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#111;color:#fff;font-family:inherit;font-size:clamp(28px,5.4vw,52px);font-weight:620;letter-spacing:-0.02em;padding:0 56px 0 18px;appearance:none;cursor:pointer;line-height:1.1}",
+      ".pzr-pro-time-select:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
+      ".pzr-pro-time-select.pzr-pro-time-empty{font-size:clamp(16px,2.7vw,22px);font-weight:500;color:#c7c7c7;letter-spacing:0;line-height:1.2}",
+      ".pzr-pro-time-wrap::after{content:'▾';position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:18px;color:#fff;pointer-events:none}",
+      ".pzr-pro-submit{width:100%;height:76px;border:0;border-radius:14px;background:#c0f333;color:#0b0b0b;font-family:inherit;font-size:clamp(24px,4.6vw,40px);font-weight:650;letter-spacing:-0.015em;cursor:pointer;transition:transform .14s ease,filter .14s ease}",
+      ".pzr-pro-submit:hover{filter:brightness(1.03)}",
+      ".pzr-pro-submit:active{transform:translateY(1px)}",
       ".pzr-pro-submit:disabled{opacity:.55;cursor:not-allowed}",
-      ".pzr-pro-status{min-height:20px;margin:10px 2px 0;font-size:13px;color:#bbb}",
+      ".pzr-pro-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-pro-status.success{color:#c0f333}",
       ".pzr-pro-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-pro-title{font-size:34px}.pzr-pro-time-select{font-size:28px}.pzr-pro-submit{font-size:26px}}"
+      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:66px;padding:0 14px}.pzr-pro-step{width:36px;height:36px;font-size:28px}.pzr-pro-time-select{height:72px;padding:0 48px 0 14px}.pzr-pro-submit{height:66px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -884,6 +888,7 @@ function setupParazarProReservationForm(config) {
 
   function buildTimeOptions(ui) {
     ui.hourSelect.innerHTML = "";
+    ui.hourSelect.classList.remove("pzr-pro-time-empty");
 
     const minHourMinutes = toMinutes(options.minHour);
     const maxHourMinutes = toMinutes(options.maxHour);
@@ -895,6 +900,7 @@ function setupParazarProReservationForm(config) {
       option.value = "";
       option.textContent = "Aucun créneau";
       ui.hourSelect.appendChild(option);
+      ui.hourSelect.classList.add("pzr-pro-time-empty");
       ui.hourSelect.disabled = true;
       ui.submitButton.disabled = true;
       setStatus(ui, "Aucun créneau disponible.", "error");

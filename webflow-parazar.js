@@ -699,3 +699,341 @@ function setupParazarSecureSetupIntent(config) {
 function setupParazarSecurePayment(config) {
   return setupParazarSecureSetupIntent(config);
 }
+
+// Pro reservation widget
+function setupParazarProReservationForm(config) {
+  const options = Object.assign({
+    mountSelector: "body",
+    apiUrl: "https://backend.parazar.co/api/pro/reservation",
+    missingIdRedirectUrl: "https://pro.parazar.co",
+    title: "Tables disponibles",
+    submitLabel: "Envoyer à Parazar",
+    minTables: 1,
+    minPeoplePerTable: 6,
+    maxPeoplePerTable: 10,
+    minHour: "18:00",
+    maxHour: "21:30",
+    intervalMinutes: 15,
+    locale: "fr-FR",
+    onSubmitSuccess: null,
+    onSubmitError: null
+  }, config || {});
+
+  const STYLE_ID = "pzr-pro-reservation-style";
+  const ROOT_ID = "pzr-pro-reservation-root";
+
+  function toMinutes(hhmm) {
+    const parts = String(hhmm).split(":");
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) {
+      return null;
+    }
+    return h * 60 + m;
+  }
+
+  function toHourLabel(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return String(h).padStart(2, "0") + "h" + String(m).padStart(2, "0");
+  }
+
+  function getRoundedNowMinutes() {
+    const now = new Date();
+    const minutes = now.getHours() * 60 + now.getMinutes();
+    const step = Math.max(1, Number(options.intervalMinutes) || 15);
+    return Math.ceil(minutes / step) * step;
+  }
+
+  function getPayloadIdFromUrl() {
+    if (typeof window.getUrlPayloadId === "function") {
+      return window.getUrlPayloadId();
+    }
+
+    const searchParams = new URLSearchParams(window.location.search);
+    const directId = searchParams.get("id");
+    if (directId && directId.trim()) {
+      return directId.trim();
+    }
+
+    const payload = searchParams.get("payload");
+    if (!payload) {
+      return null;
+    }
+
+    try {
+      const parsedPayload = JSON.parse(payload);
+      if (parsedPayload && parsedPayload.id != null && String(parsedPayload.id).trim()) {
+        return String(parsedPayload.id).trim();
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    try {
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+      const decoded = atob(padded);
+      const parsedPayload = JSON.parse(decoded);
+      if (parsedPayload && parsedPayload.id != null && String(parsedPayload.id).trim()) {
+        return String(parsedPayload.id).trim();
+      }
+    } catch (_) {
+      // ignore
+    }
+
+    return null;
+  }
+
+  function ensureStyles() {
+    if (document.getElementById(STYLE_ID)) {
+      return;
+    }
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = [
+      "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
+      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px;background:#000;color:#fff;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
+      ".pzr-pro-card{width:min(460px,96vw);border-radius:14px;border:1px solid rgba(255,255,255,.12);background:#0b0b0b;box-shadow:0 16px 40px rgba(0,0,0,.45);padding:18px}",
+      ".pzr-pro-title{margin:0 0 14px 0;font-size:42px;line-height:1.05;font-weight:600;color:#fff}",
+      ".pzr-pro-block{border-radius:12px;border:1px solid rgba(255,255,255,.1);background:#0f0f0f;padding:10px}",
+      ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#121212;margin-bottom:10px;font-size:18px;font-weight:500}",
+      ".pzr-pro-row:last-child{margin-bottom:0}",
+      ".pzr-pro-stepper{display:flex;align-items:center;gap:6px}",
+      ".pzr-pro-step{width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#fff;font-size:28px;line-height:1;cursor:pointer}",
+      ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
+      ".pzr-pro-time-wrap{position:relative;margin-bottom:10px}",
+      ".pzr-pro-time-select{width:100%;height:58px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#121212;color:#fff;font-size:34px;font-weight:600;padding:0 48px 0 14px;appearance:none;cursor:pointer}",
+      ".pzr-pro-time-wrap::after{content:'▾';position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:16px;color:#fff;pointer-events:none}",
+      ".pzr-pro-submit{width:100%;height:56px;border:0;border-radius:10px;background:#c0f333;color:#000;font-size:32px;font-weight:600;cursor:pointer}",
+      ".pzr-pro-submit:disabled{opacity:.55;cursor:not-allowed}",
+      ".pzr-pro-status{min-height:20px;margin:10px 2px 0;font-size:13px;color:#bbb}",
+      ".pzr-pro-status.success{color:#c0f333}",
+      ".pzr-pro-status.error{color:#ff8f8f}",
+      "@media (max-width:480px){.pzr-pro-title{font-size:34px}.pzr-pro-time-select{font-size:28px}.pzr-pro-submit{font-size:26px}}"
+    ].join("");
+    document.head.appendChild(style);
+  }
+
+  function getMountNode() {
+    const target = document.querySelector(options.mountSelector);
+    if (!target) {
+      throw new Error("setupParazarProReservationForm: conteneur introuvable");
+    }
+    return target;
+  }
+
+  function createUi(mountNode) {
+    let root = document.getElementById(ROOT_ID);
+    if (!root) {
+      root = document.createElement("div");
+      root.id = ROOT_ID;
+      mountNode.appendChild(root);
+    }
+
+    root.innerHTML = [
+      '<div class="pzr-pro-wrap">',
+      '  <div class="pzr-pro-card">',
+      '    <h2 class="pzr-pro-title"></h2>',
+      '    <div class="pzr-pro-block">',
+      '      <div class="pzr-pro-row">',
+      '        <span id="pzr-pro-tables-label"></span>',
+      '        <div class="pzr-pro-stepper">',
+      '          <button id="pzr-pro-tables-minus" class="pzr-pro-step" type="button" aria-label="Moins de tables">−</button>',
+      '          <button id="pzr-pro-tables-plus" class="pzr-pro-step" type="button" aria-label="Plus de tables">+</button>',
+      "        </div>",
+      "      </div>",
+      '      <div class="pzr-pro-row">',
+      '        <span id="pzr-pro-people-label"></span>',
+      '        <div class="pzr-pro-stepper">',
+      '          <button id="pzr-pro-people-minus" class="pzr-pro-step" type="button" aria-label="Moins de personnes">−</button>',
+      '          <button id="pzr-pro-people-plus" class="pzr-pro-step" type="button" aria-label="Plus de personnes">+</button>',
+      "        </div>",
+      "      </div>",
+      '      <div class="pzr-pro-time-wrap">',
+      '        <select id="pzr-pro-hour-select" class="pzr-pro-time-select" aria-label="Heure de réservation"></select>',
+      "      </div>",
+      '      <button id="pzr-pro-submit" class="pzr-pro-submit" type="button"></button>',
+      '      <p id="pzr-pro-status" class="pzr-pro-status"></p>',
+      "    </div>",
+      "  </div>",
+      "</div>"
+    ].join("");
+
+    root.querySelector(".pzr-pro-title").textContent = options.title;
+
+    return {
+      root: root,
+      tablesLabel: document.getElementById("pzr-pro-tables-label"),
+      peopleLabel: document.getElementById("pzr-pro-people-label"),
+      hourSelect: document.getElementById("pzr-pro-hour-select"),
+      submitButton: document.getElementById("pzr-pro-submit"),
+      statusNode: document.getElementById("pzr-pro-status"),
+      tablesMinus: document.getElementById("pzr-pro-tables-minus"),
+      tablesPlus: document.getElementById("pzr-pro-tables-plus"),
+      peopleMinus: document.getElementById("pzr-pro-people-minus"),
+      peoplePlus: document.getElementById("pzr-pro-people-plus")
+    };
+  }
+
+  function setStatus(ui, message, type) {
+    ui.statusNode.textContent = message || "";
+    ui.statusNode.className = "pzr-pro-status" + (type ? " " + type : "");
+  }
+
+  function buildTimeOptions(ui) {
+    ui.hourSelect.innerHTML = "";
+
+    const minHourMinutes = toMinutes(options.minHour);
+    const maxHourMinutes = toMinutes(options.maxHour);
+    const roundedNow = getRoundedNowMinutes();
+    const startMinutes = Math.max(minHourMinutes, roundedNow);
+
+    if (startMinutes > maxHourMinutes) {
+      const option = document.createElement("option");
+      option.value = "";
+      option.textContent = "Aucun créneau";
+      ui.hourSelect.appendChild(option);
+      ui.hourSelect.disabled = true;
+      ui.submitButton.disabled = true;
+      setStatus(ui, "Aucun créneau disponible.", "error");
+      return;
+    }
+
+    const step = Math.max(1, Number(options.intervalMinutes) || 15);
+    for (let minutes = startMinutes; minutes <= maxHourMinutes; minutes += step) {
+      const option = document.createElement("option");
+      const label = toHourLabel(minutes);
+      option.value = label;
+      option.textContent = label;
+      ui.hourSelect.appendChild(option);
+    }
+
+    ui.hourSelect.disabled = false;
+    ui.submitButton.disabled = false;
+    setStatus(ui, "", "");
+  }
+
+  const state = {
+    tableNumber: Math.max(1, Number(options.minTables) || 1),
+    peopleNumberPerTable: Math.max(
+      Number(options.minPeoplePerTable) || 6,
+      6
+    )
+  };
+  const payloadId = getPayloadIdFromUrl();
+
+  if (!payloadId) {
+    window.location.replace(options.missingIdRedirectUrl || "https://pro.parazar.co");
+    return {
+      destroy: function () {},
+      getState: function () { return null; }
+    };
+  }
+
+  function renderTables(ui) {
+    ui.tablesLabel.textContent = state.tableNumber + " table" + (state.tableNumber > 1 ? "s" : "");
+  }
+
+  function renderPeople(ui) {
+    ui.peopleLabel.textContent =
+      state.peopleNumberPerTable +
+      " personne" + (state.peopleNumberPerTable > 1 ? "s" : "") +
+      " / table";
+  }
+
+  async function submitReservation(ui) {
+    if (!payloadId) {
+      window.location.replace(options.missingIdRedirectUrl || "https://pro.parazar.co");
+      return;
+    }
+
+    const selectedHour = ui.hourSelect.value;
+    if (!selectedHour) {
+      return;
+    }
+
+    ui.submitButton.disabled = true;
+    setStatus(ui, "Envoi en cours...", "");
+
+    try {
+      const body = {
+        id: payloadId,
+        table_number: state.tableNumber,
+        people_number_per_table: state.peopleNumberPerTable,
+        hour_booked: selectedHour
+      };
+
+      const response = await fetch(options.apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        throw new Error("submit_error");
+      }
+
+      setStatus(ui, "Envoyé à Parazar.", "success");
+      if (typeof options.onSubmitSuccess === "function") {
+        options.onSubmitSuccess({ response: response, payload: body });
+      }
+    } catch (error) {
+      setStatus(ui, "Impossible d'envoyer pour le moment.", "error");
+      if (typeof options.onSubmitError === "function") {
+        options.onSubmitError(error);
+      }
+    } finally {
+      ui.submitButton.disabled = ui.hourSelect.disabled;
+    }
+  }
+
+  ensureStyles();
+  const mountNode = getMountNode();
+  const ui = createUi(mountNode);
+
+  ui.submitButton.textContent = options.submitLabel;
+  renderTables(ui);
+  renderPeople(ui);
+  buildTimeOptions(ui);
+
+  ui.tablesMinus.addEventListener("click", function () {
+    state.tableNumber = Math.max(1, state.tableNumber - 1);
+    renderTables(ui);
+  });
+
+  ui.tablesPlus.addEventListener("click", function () {
+    state.tableNumber += 1;
+    renderTables(ui);
+  });
+
+  ui.peopleMinus.addEventListener("click", function () {
+    state.peopleNumberPerTable = Math.max(Number(options.minPeoplePerTable) || 6, state.peopleNumberPerTable - 1);
+    renderPeople(ui);
+  });
+
+  ui.peoplePlus.addEventListener("click", function () {
+    state.peopleNumberPerTable = Math.min(Number(options.maxPeoplePerTable) || 10, state.peopleNumberPerTable + 1);
+    renderPeople(ui);
+  });
+
+  ui.submitButton.addEventListener("click", function () {
+    submitReservation(ui);
+  });
+
+  return {
+    destroy: function () {
+      if (ui && ui.root) {
+        ui.root.remove();
+      }
+    },
+    getState: function () {
+      return {
+        tableNumber: state.tableNumber,
+        peopleNumberPerTable: state.peopleNumberPerTable,
+        hourBooked: ui.hourSelect.value || null
+      };
+    }
+  };
+}

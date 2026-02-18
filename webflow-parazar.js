@@ -861,16 +861,17 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
       ".pzr-pro-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-pro-title-font-size:clamp(26px,3.4vw,38px);--pzr-pro-time-label-font-size:18px;--pzr-pro-time-label-top-spacing:8px;--pzr-pro-time-chip-font-size:clamp(20px,2.6vw,34px)}",
       ".pzr-pro-card::after{display:none}",
-      ".pzr-pro-title{margin:0 0 16px 0;font-size:var(--pzr-pro-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3}",
+      ".pzr-pro-title{margin:0 0 16px 0;font-size:var(--pzr-pro-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
       ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
       ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 18px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;margin-bottom:12px;font-size:clamp(19px,3.2vw,29px);font-weight:520;letter-spacing:-0.005em;line-height:1.1}",
       ".pzr-pro-row:last-child{margin-bottom:0}",
       ".pzr-pro-stepper{display:flex;align-items:center;gap:8px}",
       ".pzr-pro-step{width:42px;height:42px;border:0;border-radius:10px;background:transparent;color:#fff;font-family:inherit;font-size:34px;font-weight:400;line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}",
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
-      ".pzr-pro-time-label{margin:var(--pzr-pro-time-label-top-spacing) 2px 10px 2px;font-size:var(--pzr-pro-time-label-font-size);font-weight:560;color:#e2e2e2;letter-spacing:.005em}",
+      ".pzr-pro-time-label{margin:var(--pzr-pro-time-label-top-spacing) 2px 10px 2px;font-size:var(--pzr-pro-time-label-font-size);font-weight:560;color:#e2e2e2;letter-spacing:.005em;text-align:center}",
       ".pzr-pro-time-wrap{position:relative;margin-bottom:12px}",
-      ".pzr-pro-time-chips{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;padding:2px 2px 6px}",
+      ".pzr-pro-time-chips{display:flex;flex-direction:column;gap:10px;padding:2px 2px 6px;width:100%}",
+      ".pzr-pro-time-row{display:flex;justify-content:center;gap:10px;width:100%}",
       ".pzr-pro-time-chip{display:flex;align-items:center;justify-content:center;text-align:center;flex:0 0 126px;width:126px;height:56px;padding:0;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-pro-time-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
       ".pzr-pro-time-chip:hover{border-color:rgba(255,255,255,.3)}",
       ".pzr-pro-time-chip.is-selected{background:#c0f333;color:#0b0b0b;border-color:#c0f333;box-shadow:0 8px 20px rgba(192,243,51,.22)}",
@@ -1002,6 +1003,18 @@ function setupParazarProReservationForm(config) {
 
     let lastAddedTimestamp = null;
     let optionsCount = 0;
+    let currentRow = null;
+    let chipsInCurrentRow = 0;
+
+    function getOrCreateRow() {
+      if (!currentRow || chipsInCurrentRow >= 3) {
+        currentRow = document.createElement("div");
+        currentRow.className = "pzr-pro-time-row";
+        ui.hourChips.appendChild(currentRow);
+        chipsInCurrentRow = 0;
+      }
+      return currentRow;
+    }
 
     function appendChip(label, selectedByDefault) {
       const chip = document.createElement("button");
@@ -1016,7 +1029,8 @@ function setupParazarProReservationForm(config) {
         chip.setAttribute("aria-pressed", nextSelected ? "true" : "false");
         updateSubmitButtonAvailability(ui);
       });
-      ui.hourChips.appendChild(chip);
+      getOrCreateRow().appendChild(chip);
+      chipsInCurrentRow += 1;
     }
 
     for (

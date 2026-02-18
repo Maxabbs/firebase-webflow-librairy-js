@@ -870,7 +870,7 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
       ".pzr-pro-time-label{margin:var(--pzr-pro-time-label-top-spacing) 2px 10px 2px;font-size:var(--pzr-pro-time-label-font-size);font-weight:560;color:#e2e2e2;letter-spacing:.005em}",
       ".pzr-pro-time-wrap{position:relative;margin-bottom:12px}",
-      ".pzr-pro-time-chips{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:2px 2px 6px}",
+      ".pzr-pro-time-chips{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;padding:2px 2px 6px}",
       ".pzr-pro-time-chip{display:flex;align-items:center;justify-content:center;text-align:center;flex:0 0 126px;width:126px;height:56px;padding:0;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-pro-time-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
       ".pzr-pro-time-chip:hover{border-color:rgba(255,255,255,.3)}",
       ".pzr-pro-time-chip.is-selected{background:#c0f333;color:#0b0b0b;border-color:#c0f333;box-shadow:0 8px 20px rgba(192,243,51,.22)}",

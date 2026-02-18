@@ -870,6 +870,7 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
       ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 18px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;margin-bottom:12px;font-size:var(--pzr-pro-counter-font-size);font-weight:var(--pzr-pro-counter-font-weight);letter-spacing:-0.005em;line-height:1.1}",
       ".pzr-pro-row:last-child{margin-bottom:0}",
+      ".pzr-pro-row>span{flex:1;min-width:0;padding-right:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".pzr-pro-stepper{display:flex;align-items:center;gap:8px}",
       ".pzr-pro-step{width:var(--pzr-pro-step-size);height:var(--pzr-pro-step-size);border:0;border-radius:10px;background:transparent;color:#fff;font-family:inherit;font-size:var(--pzr-pro-step-font-size);font-weight:var(--pzr-pro-step-font-weight);line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}",
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",

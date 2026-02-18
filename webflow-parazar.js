@@ -711,6 +711,7 @@ function setupParazarProReservationForm(config) {
     minTables: 1,
     minPeoplePerTable: 6,
     maxPeoplePerTable: 10,
+    peopleStep: 2,
     minHour: "18:00",
     maxHour: "23:55",
     intervalMinutes: 15,
@@ -748,6 +749,7 @@ function setupParazarProReservationForm(config) {
     minPeoplePerTableValue,
     Number(options.maxPeoplePerTable) || 10
   );
+  const peopleStepValue = Math.max(1, Math.floor(Number(options.peopleStep) || 2));
   const intervalMinutesValue = Math.max(1, Number(options.intervalMinutes) || 15);
   const startOffsetIntervalsValue = Math.max(0, Math.floor(Number(options.startOffsetIntervals) || 0));
   const minHourMinutesValue = toMinutes(options.minHour);
@@ -862,11 +864,14 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-stepper{display:flex;align-items:center;gap:8px}",
       ".pzr-pro-step{width:42px;height:42px;border:0;border-radius:10px;background:transparent;color:#fff;font-family:inherit;font-size:34px;font-weight:400;line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}",
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
+      ".pzr-pro-time-label{margin:0 2px 10px 2px;font-size:14px;font-weight:500;color:#c8c8c8;letter-spacing:.01em}",
       ".pzr-pro-time-wrap{position:relative;margin-bottom:12px}",
-      ".pzr-pro-time-select{width:100%;height:78px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;color:#fff;font-family:inherit;font-size:clamp(19px,3.2vw,29px);font-weight:520;letter-spacing:-0.005em;padding:0 56px 0 18px;appearance:none;cursor:pointer;line-height:1.1}",
+      ".pzr-pro-time-select{width:100%;min-height:116px;max-height:226px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;color:#fff;font-family:inherit;font-size:clamp(19px,3.2vw,29px);font-weight:520;letter-spacing:-0.005em;padding:8px 10px;cursor:pointer;line-height:1.25;overflow:auto;scrollbar-width:thin;scrollbar-color:#2b2b2b #101010}",
+      ".pzr-pro-time-select option{padding:8px 10px;border-radius:8px;margin:2px 0;background:#101010;color:#fff;font-size:0.82em;font-weight:500}",
+      ".pzr-pro-time-select option:checked{background:#c0f333;color:#0b0b0b}",
       ".pzr-pro-time-select:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
-      ".pzr-pro-time-select.pzr-pro-time-empty{font-size:clamp(14px,2.2vw,18px);font-weight:500;color:#b9b9b9;letter-spacing:.01em;line-height:1.2}",
-      ".pzr-pro-time-wrap::after{content:'▾';position:absolute;right:18px;top:50%;transform:translateY(-50%);font-size:18px;color:#fff;pointer-events:none}",
+      ".pzr-pro-time-select.pzr-pro-time-empty{min-height:64px;max-height:64px;font-size:clamp(14px,2.2vw,18px);font-weight:500;color:#b9b9b9;letter-spacing:.01em;line-height:1.2}",
+      ".pzr-pro-time-wrap::after{display:none}",
       ".pzr-pro-submit{width:100%;height:64px;border:0;border-radius:13px;background:#c0f333;color:#0b0b0b;font-family:inherit;font-size:clamp(19px,3vw,28px);font-weight:620;letter-spacing:-0.01em;cursor:pointer;box-shadow:0 10px 28px rgba(192,243,51,.26),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .14s ease,filter .14s ease}",
       ".pzr-pro-submit:hover{filter:brightness(1.03)}",
       ".pzr-pro-submit:active{transform:translateY(1px)}",
@@ -874,7 +879,7 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-pro-status.success{color:#c0f333}",
       ".pzr-pro-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:62px;padding:0 14px}.pzr-pro-step{width:34px;height:34px;font-size:26px}.pzr-pro-time-select{height:68px;padding:0 46px 0 14px}.pzr-pro-submit{height:58px;font-size:24px}}"
+      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:62px;padding:0 14px}.pzr-pro-step{width:34px;height:34px;font-size:26px}.pzr-pro-time-select{min-height:104px;max-height:194px;font-size:clamp(17px,4.6vw,24px)}.pzr-pro-submit{height:58px;font-size:24px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -914,8 +919,9 @@ function setupParazarProReservationForm(config) {
       '          <button id="pzr-pro-people-plus" class="pzr-pro-step" type="button" aria-label="Plus de personnes">+</button>',
       "        </div>",
       "      </div>",
+      '      <div class="pzr-pro-time-label">Vos créneaux disponibles?</div>',
       '      <div class="pzr-pro-time-wrap">',
-      '        <select id="pzr-pro-hour-select" class="pzr-pro-time-select" aria-label="Heure de réservation"></select>',
+      '        <select id="pzr-pro-hour-select" class="pzr-pro-time-select" aria-label="Heure de réservation" multiple></select>',
       "      </div>",
       '      <button id="pzr-pro-submit" class="pzr-pro-submit" type="button"></button>',
       '      <p id="pzr-pro-status" class="pzr-pro-status"></p>',
@@ -961,8 +967,10 @@ function setupParazarProReservationForm(config) {
       const option = document.createElement("option");
       option.value = "";
       option.textContent = "Fini pour aujourd'hui";
+      option.selected = true;
       ui.hourSelect.appendChild(option);
       ui.hourSelect.classList.add("pzr-pro-time-empty");
+      ui.hourSelect.size = 1;
       ui.hourSelect.disabled = true;
       ui.submitButton.disabled = true;
       setStatus(ui, "", "");
@@ -970,6 +978,7 @@ function setupParazarProReservationForm(config) {
     }
 
     let lastAddedTimestamp = null;
+    let optionsCount = 0;
     for (
       let slot = new Date(startSlot);
       slot.getTime() <= bookingWindow.end.getTime();
@@ -979,8 +988,12 @@ function setupParazarProReservationForm(config) {
       const label = toHourLabel(getMinutesOfDay(slot));
       option.value = label;
       option.textContent = label;
+      if (optionsCount === 0) {
+        option.selected = true;
+      }
       ui.hourSelect.appendChild(option);
       lastAddedTimestamp = slot.getTime();
+      optionsCount += 1;
     }
 
     if (lastAddedTimestamp !== bookingWindow.end.getTime()) {
@@ -988,9 +1001,14 @@ function setupParazarProReservationForm(config) {
       const label = toHourLabel(getMinutesOfDay(bookingWindow.end));
       option.value = label;
       option.textContent = label;
+      if (optionsCount === 0) {
+        option.selected = true;
+      }
       ui.hourSelect.appendChild(option);
+      optionsCount += 1;
     }
 
+    ui.hourSelect.size = Math.min(6, Math.max(3, optionsCount));
     ui.hourSelect.disabled = false;
     ui.submitButton.disabled = false;
     setStatus(ui, "", "");
@@ -1027,8 +1045,10 @@ function setupParazarProReservationForm(config) {
       return;
     }
 
-    const selectedHour = ui.hourSelect.value;
-    if (!selectedHour) {
+    const selectedHours = Array.from(ui.hourSelect.selectedOptions)
+      .map(function (option) { return String(option.value || "").trim(); })
+      .filter(Boolean);
+    if (!selectedHours.length) {
       return;
     }
 
@@ -1040,7 +1060,7 @@ function setupParazarProReservationForm(config) {
         id: payloadId,
         table_number: state.tableNumber,
         people_number_per_table: state.peopleNumberPerTable,
-        hour_booked: selectedHour
+        hour_booked: selectedHours.length === 1 ? selectedHours[0] : selectedHours
       };
 
       const response = await fetch(options.apiUrl, {
@@ -1087,12 +1107,12 @@ function setupParazarProReservationForm(config) {
   });
 
   ui.peopleMinus.addEventListener("click", function () {
-    state.peopleNumberPerTable = Math.max(minPeoplePerTableValue, state.peopleNumberPerTable - 1);
+    state.peopleNumberPerTable = Math.max(minPeoplePerTableValue, state.peopleNumberPerTable - peopleStepValue);
     renderPeople(ui);
   });
 
   ui.peoplePlus.addEventListener("click", function () {
-    state.peopleNumberPerTable = Math.min(maxPeoplePerTableValue, state.peopleNumberPerTable + 1);
+    state.peopleNumberPerTable = Math.min(maxPeoplePerTableValue, state.peopleNumberPerTable + peopleStepValue);
     renderPeople(ui);
   });
 
@@ -1107,10 +1127,14 @@ function setupParazarProReservationForm(config) {
       }
     },
     getState: function () {
+      const selectedHours = Array.from(ui.hourSelect.selectedOptions)
+        .map(function (option) { return String(option.value || "").trim(); })
+        .filter(Boolean);
       return {
         tableNumber: state.tableNumber,
         peopleNumberPerTable: state.peopleNumberPerTable,
-        hourBooked: ui.hourSelect.value || null
+        hourBooked: selectedHours.length === 1 ? selectedHours[0] : selectedHours,
+        hourBookedList: selectedHours
       };
     }
   };

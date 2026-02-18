@@ -708,7 +708,7 @@ function setupParazarProReservationForm(config) {
     missingIdRedirectUrl: "https://pro.parazar.co",
     title: "Tables disponibles",
     titleFontSize: "clamp(26px,3.4vw,38px)",
-    timeLabelFontSize: "18px",
+    timeLabelFontSize: "clamp(18px,2.4vw,28px)",
     timeLabelTopSpacing: "8px",
     timeChipFontSize: "clamp(20px,2.6vw,34px)",
     submitLabel: "Envoyer à Parazar",
@@ -859,7 +859,7 @@ function setupParazarProReservationForm(config) {
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
       ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
-      ".pzr-pro-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-pro-title-font-size:clamp(26px,3.4vw,38px);--pzr-pro-time-label-font-size:18px;--pzr-pro-time-label-top-spacing:8px;--pzr-pro-time-chip-font-size:clamp(20px,2.6vw,34px)}",
+      ".pzr-pro-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-pro-title-font-size:clamp(26px,3.4vw,38px);--pzr-pro-time-label-font-size:clamp(18px,2.4vw,28px);--pzr-pro-time-label-top-spacing:8px;--pzr-pro-time-chip-font-size:clamp(20px,2.6vw,34px)}",
       ".pzr-pro-card::after{display:none}",
       ".pzr-pro-title{margin:0 0 16px 0;font-size:var(--pzr-pro-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
       ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
@@ -870,9 +870,9 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
       ".pzr-pro-time-label{margin:var(--pzr-pro-time-label-top-spacing) 2px 10px 2px;font-size:var(--pzr-pro-time-label-font-size);font-weight:560;color:#e2e2e2;letter-spacing:.005em;text-align:center}",
       ".pzr-pro-time-wrap{position:relative;margin-bottom:12px}",
-      ".pzr-pro-time-chips{display:flex;flex-direction:column;gap:10px;padding:2px 2px 6px;width:100%}",
+      ".pzr-pro-time-chips{display:flex;flex-direction:column;gap:10px;padding:2px 2px 6px;width:100%;max-width:100%;box-sizing:border-box;overflow:hidden}",
       ".pzr-pro-time-row{display:flex;justify-content:center;gap:10px;width:100%}",
-      ".pzr-pro-time-chip{display:flex;align-items:center;justify-content:center;text-align:center;flex:0 0 126px;width:126px;height:56px;padding:0;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-pro-time-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
+      ".pzr-pro-time-chip{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;flex:0 1 calc((100% - 20px)/3);width:calc((100% - 20px)/3);max-width:126px;min-width:0;height:56px;padding:0;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-pro-time-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
       ".pzr-pro-time-chip:hover{border-color:rgba(255,255,255,.3)}",
       ".pzr-pro-time-chip.is-selected{background:#c0f333;color:#0b0b0b;border-color:#c0f333;box-shadow:0 8px 20px rgba(192,243,51,.22)}",
       ".pzr-pro-time-chip:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
@@ -885,7 +885,7 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-pro-status.success{color:#c0f333}",
       ".pzr-pro-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:62px;padding:0 14px}.pzr-pro-step{width:34px;height:34px;font-size:26px}.pzr-pro-time-chip{flex-basis:112px;width:112px;height:50px;padding:0}.pzr-pro-submit{height:58px;font-size:24px}}"
+      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:62px;padding:0 14px}.pzr-pro-step{width:34px;height:34px;font-size:26px}.pzr-pro-time-row{gap:8px}.pzr-pro-time-chip{flex-basis:calc((100% - 16px)/3);width:calc((100% - 16px)/3);max-width:none;height:50px;padding:0}.pzr-pro-submit{height:58px;font-size:24px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -943,7 +943,7 @@ function setupParazarProReservationForm(config) {
     const cardNode = root.querySelector(".pzr-pro-card");
     if (cardNode) {
       cardNode.style.setProperty("--pzr-pro-title-font-size", String(options.titleFontSize || "clamp(26px,3.4vw,38px)"));
-      cardNode.style.setProperty("--pzr-pro-time-label-font-size", String(options.timeLabelFontSize || "18px"));
+      cardNode.style.setProperty("--pzr-pro-time-label-font-size", String(options.timeLabelFontSize || "clamp(18px,2.4vw,28px)"));
       cardNode.style.setProperty("--pzr-pro-time-label-top-spacing", String(options.timeLabelTopSpacing || "8px"));
       cardNode.style.setProperty("--pzr-pro-time-chip-font-size", String(options.timeChipFontSize || "clamp(20px,2.6vw,34px)"));
     }

@@ -707,6 +707,8 @@ function setupParazarProReservationForm(config) {
     apiUrl: "https://backend.parazar.co/api/pro/reservation",
     missingIdRedirectUrl: "https://pro.parazar.co",
     title: "Tables disponibles",
+    titleFontSize: "clamp(26px,3.4vw,38px)",
+    timeLabelFontSize: "18px",
     submitLabel: "Envoyer à Parazar",
     minTables: 1,
     minPeoplePerTable: 6,
@@ -855,22 +857,23 @@ function setupParazarProReservationForm(config) {
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
       ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
-      ".pzr-pro-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px}",
+      ".pzr-pro-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-pro-title-font-size:clamp(26px,3.4vw,38px);--pzr-pro-time-label-font-size:18px}",
       ".pzr-pro-card::after{display:none}",
-      ".pzr-pro-title{margin:0 0 16px 0;font-size:clamp(26px,3.4vw,38px);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3}",
+      ".pzr-pro-title{margin:0 0 16px 0;font-size:var(--pzr-pro-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3}",
       ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
       ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 18px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;margin-bottom:12px;font-size:clamp(19px,3.2vw,29px);font-weight:520;letter-spacing:-0.005em;line-height:1.1}",
       ".pzr-pro-row:last-child{margin-bottom:0}",
       ".pzr-pro-stepper{display:flex;align-items:center;gap:8px}",
       ".pzr-pro-step{width:42px;height:42px;border:0;border-radius:10px;background:transparent;color:#fff;font-family:inherit;font-size:34px;font-weight:400;line-height:1;cursor:pointer;transition:background .16s ease,color .16s ease}",
       ".pzr-pro-step:hover{background:rgba(255,255,255,.08)}",
-      ".pzr-pro-time-label{margin:0 2px 10px 2px;font-size:14px;font-weight:500;color:#c8c8c8;letter-spacing:.01em}",
+      ".pzr-pro-time-label{margin:0 2px 10px 2px;font-size:var(--pzr-pro-time-label-font-size);font-weight:560;color:#e2e2e2;letter-spacing:.005em}",
       ".pzr-pro-time-wrap{position:relative;margin-bottom:12px}",
-      ".pzr-pro-time-select{width:100%;min-height:116px;max-height:226px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;color:#fff;font-family:inherit;font-size:clamp(19px,3.2vw,29px);font-weight:520;letter-spacing:-0.005em;padding:8px 10px;cursor:pointer;line-height:1.25;overflow:auto;scrollbar-width:thin;scrollbar-color:#2b2b2b #101010}",
-      ".pzr-pro-time-select option{padding:8px 10px;border-radius:8px;margin:2px 0;background:#101010;color:#fff;font-size:0.82em;font-weight:500}",
-      ".pzr-pro-time-select option:checked{background:#c0f333;color:#0b0b0b}",
-      ".pzr-pro-time-select:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
-      ".pzr-pro-time-select.pzr-pro-time-empty{min-height:64px;max-height:64px;font-size:clamp(14px,2.2vw,18px);font-weight:500;color:#b9b9b9;letter-spacing:.01em;line-height:1.2}",
+      ".pzr-pro-time-chips{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:2px 2px 6px}",
+      ".pzr-pro-time-chip{flex:0 0 126px;width:126px;height:56px;padding:0 12px;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:clamp(20px,2.6vw,34px);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
+      ".pzr-pro-time-chip:hover{border-color:rgba(255,255,255,.3)}",
+      ".pzr-pro-time-chip.is-selected{background:#c0f333;color:#0b0b0b;border-color:#c0f333;box-shadow:0 8px 20px rgba(192,243,51,.22)}",
+      ".pzr-pro-time-chip:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
+      ".pzr-pro-time-empty-pill{display:inline-flex;align-items:center;justify-content:center;min-height:56px;padding:0 18px;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#101010;color:#b9b9b9;font-size:clamp(14px,2.2vw,18px);font-weight:500;letter-spacing:.01em}",
       ".pzr-pro-time-wrap::after{display:none}",
       ".pzr-pro-submit{width:100%;height:64px;border:0;border-radius:13px;background:#c0f333;color:#0b0b0b;font-family:inherit;font-size:clamp(19px,3vw,28px);font-weight:620;letter-spacing:-0.01em;cursor:pointer;box-shadow:0 10px 28px rgba(192,243,51,.26),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .14s ease,filter .14s ease}",
       ".pzr-pro-submit:hover{filter:brightness(1.03)}",
@@ -879,7 +882,7 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-pro-status.success{color:#c0f333}",
       ".pzr-pro-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:62px;padding:0 14px}.pzr-pro-step{width:34px;height:34px;font-size:26px}.pzr-pro-time-select{min-height:104px;max-height:194px;font-size:clamp(17px,4.6vw,24px)}.pzr-pro-submit{height:58px;font-size:24px}}"
+      "@media (max-width:480px){.pzr-pro-wrap{padding:14px}.pzr-pro-card{padding:16px;border-radius:16px}.pzr-pro-row{min-height:62px;padding:0 14px}.pzr-pro-step{width:34px;height:34px;font-size:26px}.pzr-pro-time-chip{flex-basis:112px;width:112px;height:50px;padding:0 10px;font-size:clamp(18px,5.1vw,24px)}.pzr-pro-submit{height:58px;font-size:24px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -919,9 +922,9 @@ function setupParazarProReservationForm(config) {
       '          <button id="pzr-pro-people-plus" class="pzr-pro-step" type="button" aria-label="Plus de personnes">+</button>',
       "        </div>",
       "      </div>",
-      '      <div class="pzr-pro-time-label">Vos créneaux disponibles?</div>',
+      '      <div class="pzr-pro-time-label">Vos créneaux disponibles</div>',
       '      <div class="pzr-pro-time-wrap">',
-      '        <select id="pzr-pro-hour-select" class="pzr-pro-time-select" aria-label="Heure de réservation" multiple></select>',
+      '        <div id="pzr-pro-hour-chips" class="pzr-pro-time-chips" role="listbox" aria-label="Heure de réservation"></div>',
       "      </div>",
       '      <button id="pzr-pro-submit" class="pzr-pro-submit" type="button"></button>',
       '      <p id="pzr-pro-status" class="pzr-pro-status"></p>',
@@ -930,13 +933,21 @@ function setupParazarProReservationForm(config) {
       "</div>"
     ].join("");
 
-    root.querySelector(".pzr-pro-title").textContent = options.title;
+    const titleNode = root.querySelector(".pzr-pro-title");
+    if (titleNode) {
+      titleNode.textContent = options.title;
+    }
+    const cardNode = root.querySelector(".pzr-pro-card");
+    if (cardNode) {
+      cardNode.style.setProperty("--pzr-pro-title-font-size", String(options.titleFontSize || "clamp(26px,3.4vw,38px)"));
+      cardNode.style.setProperty("--pzr-pro-time-label-font-size", String(options.timeLabelFontSize || "18px"));
+    }
 
     return {
       root: root,
       tablesLabel: document.getElementById("pzr-pro-tables-label"),
       peopleLabel: document.getElementById("pzr-pro-people-label"),
-      hourSelect: document.getElementById("pzr-pro-hour-select"),
+      hourChips: document.getElementById("pzr-pro-hour-chips"),
       submitButton: document.getElementById("pzr-pro-submit"),
       statusNode: document.getElementById("pzr-pro-status"),
       tablesMinus: document.getElementById("pzr-pro-tables-minus"),
@@ -951,9 +962,20 @@ function setupParazarProReservationForm(config) {
     ui.statusNode.className = "pzr-pro-status" + (type ? " " + type : "");
   }
 
+  function getSelectedHours(ui) {
+    return Array.from(ui.hourChips.querySelectorAll(".pzr-pro-time-chip.is-selected"))
+      .map(function (button) { return String(button.dataset.value || "").trim(); })
+      .filter(Boolean);
+  }
+
+  function updateSubmitButtonAvailability(ui) {
+    const hasNoSlots = ui.hourChips.getAttribute("data-empty") === "1";
+    ui.submitButton.disabled = hasNoSlots || getSelectedHours(ui).length === 0;
+  }
+
   function buildTimeOptions(ui) {
-    ui.hourSelect.innerHTML = "";
-    ui.hourSelect.classList.remove("pzr-pro-time-empty");
+    ui.hourChips.innerHTML = "";
+    ui.hourChips.setAttribute("data-empty", "0");
 
     const now = new Date();
     const bookingWindow = resolveBookingWindow(now);
@@ -964,53 +986,53 @@ function setupParazarProReservationForm(config) {
     const startSlot = ceilDateToInterval(baseStart);
 
     if (startSlot.getTime() > bookingWindow.end.getTime()) {
-      const option = document.createElement("option");
-      option.value = "";
-      option.textContent = "Fini pour aujourd'hui";
-      option.selected = true;
-      ui.hourSelect.appendChild(option);
-      ui.hourSelect.classList.add("pzr-pro-time-empty");
-      ui.hourSelect.size = 1;
-      ui.hourSelect.disabled = true;
-      ui.submitButton.disabled = true;
+      const emptyNode = document.createElement("span");
+      emptyNode.className = "pzr-pro-time-empty-pill";
+      emptyNode.textContent = "Fini pour aujourd'hui";
+      ui.hourChips.appendChild(emptyNode);
+      ui.hourChips.setAttribute("data-empty", "1");
+      updateSubmitButtonAvailability(ui);
       setStatus(ui, "", "");
       return;
     }
 
     let lastAddedTimestamp = null;
     let optionsCount = 0;
+
+    function appendChip(label, selectedByDefault) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "pzr-pro-time-chip" + (selectedByDefault ? " is-selected" : "");
+      chip.textContent = label;
+      chip.dataset.value = label;
+      chip.setAttribute("aria-pressed", selectedByDefault ? "true" : "false");
+      chip.addEventListener("click", function () {
+        const nextSelected = !chip.classList.contains("is-selected");
+        chip.classList.toggle("is-selected", nextSelected);
+        chip.setAttribute("aria-pressed", nextSelected ? "true" : "false");
+        updateSubmitButtonAvailability(ui);
+      });
+      ui.hourChips.appendChild(chip);
+    }
+
     for (
       let slot = new Date(startSlot);
       slot.getTime() <= bookingWindow.end.getTime();
       slot = new Date(slot.getTime() + (intervalMinutesValue * 60000))
     ) {
-      const option = document.createElement("option");
       const label = toHourLabel(getMinutesOfDay(slot));
-      option.value = label;
-      option.textContent = label;
-      if (optionsCount === 0) {
-        option.selected = true;
-      }
-      ui.hourSelect.appendChild(option);
+      appendChip(label, optionsCount === 0);
       lastAddedTimestamp = slot.getTime();
       optionsCount += 1;
     }
 
     if (lastAddedTimestamp !== bookingWindow.end.getTime()) {
-      const option = document.createElement("option");
       const label = toHourLabel(getMinutesOfDay(bookingWindow.end));
-      option.value = label;
-      option.textContent = label;
-      if (optionsCount === 0) {
-        option.selected = true;
-      }
-      ui.hourSelect.appendChild(option);
+      appendChip(label, optionsCount === 0);
       optionsCount += 1;
     }
 
-    ui.hourSelect.size = Math.min(6, Math.max(3, optionsCount));
-    ui.hourSelect.disabled = false;
-    ui.submitButton.disabled = false;
+    updateSubmitButtonAvailability(ui);
     setStatus(ui, "", "");
   }
 
@@ -1045,9 +1067,7 @@ function setupParazarProReservationForm(config) {
       return;
     }
 
-    const selectedHours = Array.from(ui.hourSelect.selectedOptions)
-      .map(function (option) { return String(option.value || "").trim(); })
-      .filter(Boolean);
+    const selectedHours = getSelectedHours(ui);
     if (!selectedHours.length) {
       return;
     }
@@ -1083,7 +1103,7 @@ function setupParazarProReservationForm(config) {
         options.onSubmitError(error);
       }
     } finally {
-      ui.submitButton.disabled = ui.hourSelect.disabled;
+      updateSubmitButtonAvailability(ui);
     }
   }
 
@@ -1127,9 +1147,7 @@ function setupParazarProReservationForm(config) {
       }
     },
     getState: function () {
-      const selectedHours = Array.from(ui.hourSelect.selectedOptions)
-        .map(function (option) { return String(option.value || "").trim(); })
-        .filter(Boolean);
+      const selectedHours = getSelectedHours(ui);
       return {
         tableNumber: state.tableNumber,
         peopleNumberPerTable: state.peopleNumberPerTable,

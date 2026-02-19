@@ -704,7 +704,7 @@ function setupParazarSecurePayment(config) {
 function setupParazarProReservationForm(config) {
   const options = Object.assign({
     mountSelector: "body",
-    apiUrl: "https://backend.parazar.co/api/pro/reservation",
+    apiUrl: "https://backend.parazar.co/api/pro/tables",
     missingIdRedirectUrl: "https://pro.parazar.co",
     title: "Tables disponibles",
     titleFontSize: "clamp(26px,3.4vw,38px)",
@@ -1109,7 +1109,7 @@ function setupParazarProReservationForm(config) {
         id: payloadId,
         table_number: state.tableNumber,
         people_number_per_table: state.peopleNumberPerTable,
-        hour_booked: selectedHours.length === 1 ? selectedHours[0] : selectedHours
+        hour_booked: selectedHours.map(function (value) { return String(value); })
       };
 
       const response = await fetch(options.apiUrl, {
@@ -1117,17 +1117,44 @@ function setupParazarProReservationForm(config) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
+      const responsePayload = await response.json().catch(function () { return {}; });
+      const redirectUrl = responsePayload && typeof responsePayload.redirect_url === "string"
+        ? responsePayload.redirect_url.trim()
+        : "";
+      const errorMessage = responsePayload && typeof responsePayload.error === "string"
+        ? responsePayload.error.trim()
+        : "";
+
+      if (response.status === 200 || response.status === 404) {
+        if (!redirectUrl) {
+          throw new Error("Réponse serveur invalide.");
+        }
+        if (typeof options.onSubmitSuccess === "function") {
+          options.onSubmitSuccess({ response: response, payload: body, data: responsePayload });
+        }
+        window.location.href = redirectUrl;
+        return;
+      }
+
+      if (response.status === 400 || response.status === 403 || response.status === 500) {
+        const message = errorMessage || "Impossible d'envoyer pour le moment.";
+        setStatus(ui, message, "error");
+        if (typeof options.onSubmitError === "function") {
+          options.onSubmitError(new Error(message), { response: response, payload: body, data: responsePayload });
+        }
+        return;
+      }
 
       if (!response.ok) {
-        throw new Error("submit_error");
+        throw new Error(errorMessage || "Impossible d'envoyer pour le moment.");
       }
 
       setStatus(ui, "Envoyé à Parazar.", "success");
       if (typeof options.onSubmitSuccess === "function") {
-        options.onSubmitSuccess({ response: response, payload: body });
+        options.onSubmitSuccess({ response: response, payload: body, data: responsePayload });
       }
     } catch (error) {
-      setStatus(ui, "Impossible d'envoyer pour le moment.", "error");
+      setStatus(ui, (error && error.message) ? error.message : "Impossible d'envoyer pour le moment.", "error");
       if (typeof options.onSubmitError === "function") {
         options.onSubmitError(error);
       }
@@ -1180,8 +1207,8 @@ function setupParazarProReservationForm(config) {
       return {
         tableNumber: state.tableNumber,
         peopleNumberPerTable: state.peopleNumberPerTable,
-        hourBooked: selectedHours.length === 1 ? selectedHours[0] : selectedHours,
-        hourBookedList: selectedHours
+        hourBooked: selectedHours.map(function (value) { return String(value); }),
+        hourBookedList: selectedHours.map(function (value) { return String(value); })
       };
     }
   };

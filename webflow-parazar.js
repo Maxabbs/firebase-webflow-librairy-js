@@ -725,6 +725,7 @@ function setupParazarProReservationForm(config) {
     maxHour: "23:55",
     intervalMinutes: 15,
     startOffsetIntervals: 0,
+    preselectFirstHour: false,
     locale: "fr-FR",
     onSubmitSuccess: null,
     onSubmitError: null
@@ -763,6 +764,7 @@ function setupParazarProReservationForm(config) {
   const startOffsetIntervalsValue = Math.max(0, Math.floor(Number(options.startOffsetIntervals) || 0));
   const minHourMinutesValue = toMinutes(options.minHour);
   const maxHourMinutesValue = toMinutes(options.maxHour);
+  const preselectFirstHour = Boolean(options.preselectFirstHour);
   const resolvedMinHourMinutes = Number.isFinite(minHourMinutesValue) ? minHourMinutesValue : toMinutes("18:00");
   const resolvedMaxHourMinutes = Number.isFinite(maxHourMinutesValue) ? maxHourMinutesValue : toMinutes("23:55");
 
@@ -1050,14 +1052,14 @@ function setupParazarProReservationForm(config) {
       slot = new Date(slot.getTime() + (intervalMinutesValue * 60000))
     ) {
       const label = toHourLabel(getMinutesOfDay(slot));
-      appendChip(label, optionsCount === 0);
+      appendChip(label, preselectFirstHour && optionsCount === 0);
       lastAddedTimestamp = slot.getTime();
       optionsCount += 1;
     }
 
     if (lastAddedTimestamp !== bookingWindow.end.getTime()) {
       const label = toHourLabel(getMinutesOfDay(bookingWindow.end));
-      appendChip(label, optionsCount === 0);
+      appendChip(label, preselectFirstHour && optionsCount === 0);
       optionsCount += 1;
     }
 
@@ -1214,6 +1216,605 @@ function setupParazarProReservationForm(config) {
   };
 }
 
+// User instant reservation widget
+function setupParazarInstantUserForm(config) {
+  const options = Object.assign({
+    mountSelector: "body",
+    apiBase: "https://backend.parazar.co",
+    tokenParam: "token",
+    missingTokenRedirectUrl: "https://getapp.parazar.co/p",
+    title: "Lancer mon Parazar",
+    titleFontSize: "clamp(26px,3.4vw,38px)",
+    labelFontSize: "clamp(18px,2.4vw,28px)",
+    chipFontSize: "clamp(18px,2.6vw,30px)",
+    submitFontSize: "clamp(19px,3vw,28px)",
+    whenLabel: "Quand ?",
+    withWhoLabel: "Avec qui ?",
+    whereLabel: "Où-tu te situes actuellement ?",
+    nowLabel: "Maintenant",
+    defaultWhenValue: "",
+    defaultWithWhoValue: "",
+    defaultWhereValue: "",
+    wherePlaceholder: "Sélectionne ta zone",
+    withWhoOptions: ["Solo", "Une pote 💃", "Un pote 🕺"],
+    whereOptions: [
+      "Paris - Ouest",
+      "Paris - Est",
+      "Paris - Nord",
+      "Paris - Sud",
+      "Paris - Centre",
+      "Banlieue Parisienne (77, 78, 91, 92, 93, 94, 95)"
+    ],
+    submitLabel: "Lancer mon Parazar",
+    minHour: "18:00",
+    maxHour: "23:55",
+    intervalMinutes: 15,
+    startOffsetIntervals: 0,
+    onSubmitSuccess: null,
+    onSubmitError: null
+  }, config || {});
+
+  const STYLE_ID = "pzr-user-instant-style";
+  const ROOT_ID = "pzr-user-instant-root";
+
+  function joinUrl(base, path) {
+    const baseValue = String(base || "").trim();
+    if (!baseValue) {
+      return path;
+    }
+    if (baseValue.endsWith("/") && path.startsWith("/")) {
+      return baseValue.slice(0, -1) + path;
+    }
+    if (!baseValue.endsWith("/") && !path.startsWith("/")) {
+      return baseValue + "/" + path;
+    }
+    return baseValue + path;
+  }
+
+  function toMinutes(hhmm) {
+    const parts = String(hhmm).split(":");
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) {
+      return null;
+    }
+    if (h < 0 || h > 23 || m < 0 || m > 59) {
+      return null;
+    }
+    return h * 60 + m;
+  }
+
+  function toHourLabel(minutes) {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return String(h).padStart(2, "0") + "h" + String(m).padStart(2, "0");
+  }
+
+  const intervalMinutesValue = Math.max(1, Number(options.intervalMinutes) || 15);
+  const startOffsetIntervalsValue = Math.max(0, Math.floor(Number(options.startOffsetIntervals) || 0));
+  const minHourMinutesValue = toMinutes(options.minHour);
+  const maxHourMinutesValue = toMinutes(options.maxHour);
+  const resolvedMinHourMinutes = Number.isFinite(minHourMinutesValue) ? minHourMinutesValue : toMinutes("18:00");
+  const resolvedMaxHourMinutes = Number.isFinite(maxHourMinutesValue) ? maxHourMinutesValue : toMinutes("23:55");
+
+  function buildDateAtMinutes(referenceDate, minutesOfDay, dayOffset) {
+    const date = new Date(referenceDate);
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + dayOffset);
+    date.setMinutes(minutesOfDay, 0, 0);
+    return date;
+  }
+
+  function getMinutesOfDay(date) {
+    return date.getHours() * 60 + date.getMinutes();
+  }
+
+  function ceilDateToInterval(date) {
+    const base = new Date(date);
+    base.setSeconds(0, 0);
+    const totalMinutes = getMinutesOfDay(base);
+    const roundedMinutes = Math.ceil(totalMinutes / intervalMinutesValue) * intervalMinutesValue;
+    const dayShift = Math.floor(roundedMinutes / 1440);
+    const minuteInDay = ((roundedMinutes % 1440) + 1440) % 1440;
+    base.setHours(0, 0, 0, 0);
+    base.setDate(base.getDate() + dayShift);
+    base.setMinutes(minuteInDay, 0, 0);
+    return base;
+  }
+
+  function resolveBookingWindow(now) {
+    const isOvernightWindow = resolvedMaxHourMinutes < resolvedMinHourMinutes;
+    if (!isOvernightWindow) {
+      return {
+        start: buildDateAtMinutes(now, resolvedMinHourMinutes, 0),
+        end: buildDateAtMinutes(now, resolvedMaxHourMinutes, 0)
+      };
+    }
+
+    const todayMax = buildDateAtMinutes(now, resolvedMaxHourMinutes, 0);
+    if (now.getTime() < todayMax.getTime()) {
+      return {
+        start: buildDateAtMinutes(now, resolvedMinHourMinutes, -1),
+        end: todayMax
+      };
+    }
+
+    return {
+      start: buildDateAtMinutes(now, resolvedMinHourMinutes, 0),
+      end: buildDateAtMinutes(now, resolvedMaxHourMinutes, 1)
+    };
+  }
+
+  function getTokenFromUrl() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const directToken = searchParams.get(options.tokenParam);
+    if (directToken && directToken.trim()) {
+      return directToken.trim();
+    }
+
+    const payload = searchParams.get("payload");
+    if (!payload) {
+      return null;
+    }
+
+    try {
+      const parsedPayload = JSON.parse(payload);
+      const tokenValue = parsedPayload && parsedPayload[options.tokenParam];
+      if (tokenValue != null && String(tokenValue).trim()) {
+        return String(tokenValue).trim();
+      }
+    } catch (_) {
+      // ignore parsing errors
+    }
+
+    try {
+      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+      const decoded = atob(padded);
+      const parsedPayload = JSON.parse(decoded);
+      const tokenValue = parsedPayload && parsedPayload[options.tokenParam];
+      if (tokenValue != null && String(tokenValue).trim()) {
+        return String(tokenValue).trim();
+      }
+    } catch (_) {
+      // ignore parsing errors
+    }
+
+    return null;
+  }
+
+  function ensureStyles() {
+    if (document.getElementById(STYLE_ID)) {
+      return;
+    }
+
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = [
+      "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
+      ".pzr-user-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
+      ".pzr-user-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-user-title-font-size:clamp(26px,3.4vw,38px);--pzr-user-label-font-size:clamp(18px,2.4vw,28px);--pzr-user-chip-font-size:clamp(18px,2.6vw,30px);--pzr-user-submit-font-size:clamp(19px,3vw,28px)}",
+      ".pzr-user-title{margin:0 0 16px 0;font-size:var(--pzr-user-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
+      ".pzr-user-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
+      ".pzr-user-section{margin-bottom:14px}",
+      ".pzr-user-section:last-of-type{margin-bottom:18px}",
+      ".pzr-user-label{display:block;margin:8px 2px 10px 2px;font-size:var(--pzr-user-label-font-size);font-weight:560;line-height:1.15;color:#e2e2e2;letter-spacing:.005em;text-align:left;text-wrap:balance}",
+      ".pzr-user-chips{display:flex;flex-wrap:wrap;gap:10px;padding:2px 2px 6px;width:100%;max-width:100%;box-sizing:border-box}",
+      ".pzr-user-chip{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;flex:0 1 calc((100% - 20px)/3);width:calc((100% - 20px)/3);max-width:126px;min-width:0;height:56px;padding:0 6px;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-user-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
+      ".pzr-user-chip:hover{border-color:rgba(255,255,255,.3)}",
+      ".pzr-user-chip.is-selected{background:#c0f333;color:#0b0b0b;border-color:#c0f333;box-shadow:0 8px 20px rgba(192,243,51,.22)}",
+      ".pzr-user-chip:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
+      ".pzr-user-select-wrap{position:relative}",
+      ".pzr-user-select-wrap::after{content:'▾';position:absolute;right:16px;top:50%;transform:translateY(-50%);color:#bfbfbf;pointer-events:none;font-size:18px}",
+      ".pzr-user-select{width:100%;height:56px;padding:0 46px 0 16px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;color:#fff;font-family:inherit;font-size:clamp(16px,2.3vw,20px);appearance:none;cursor:pointer}",
+      ".pzr-user-select:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.12)}",
+      ".pzr-user-submit{width:100%;height:64px;border:0;border-radius:13px;background:#c0f333;color:#0b0b0b;font-family:inherit;font-size:var(--pzr-user-submit-font-size);font-weight:620;letter-spacing:-0.01em;cursor:pointer;box-shadow:0 10px 28px rgba(192,243,51,.26),inset 0 1px 0 rgba(255,255,255,.3);transition:transform .14s ease,filter .14s ease}",
+      ".pzr-user-submit:hover{filter:brightness(1.03)}",
+      ".pzr-user-submit:active{transform:translateY(1px)}",
+      ".pzr-user-submit:disabled{opacity:.55;cursor:not-allowed}",
+      ".pzr-user-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
+      ".pzr-user-status.success{color:#c0f333}",
+      ".pzr-user-status.error{color:#ff8f8f}",
+      ".pzr-user-loading{padding:18px;text-align:center;font-size:16px;color:#bdbdbd}",
+      "@media (max-width:480px){.pzr-user-wrap{padding:14px}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chip{flex-basis:calc((100% - 16px)/3);width:calc((100% - 16px)/3);max-width:none;height:50px}.pzr-user-submit{height:58px;font-size:24px}}"
+    ].join("");
+    document.head.appendChild(style);
+  }
+
+  function getMountNode() {
+    const target = document.querySelector(options.mountSelector);
+    if (!target) {
+      throw new Error("setupParazarInstantUserForm: conteneur introuvable");
+    }
+    return target;
+  }
+
+  function ensureRoot(mountNode) {
+    let root = document.getElementById(ROOT_ID);
+    if (!root) {
+      root = document.createElement("div");
+      root.id = ROOT_ID;
+      mountNode.appendChild(root);
+    }
+    return root;
+  }
+
+  function renderLoading(root) {
+    root.innerHTML = [
+      '<div class="pzr-user-wrap">',
+      '  <div class="pzr-user-card">',
+      '    <div class="pzr-user-loading">Chargement...</div>',
+      "  </div>",
+      "</div>"
+    ].join("");
+  }
+
+  function normalizeOption(option) {
+    if (option == null) {
+      return null;
+    }
+    if (typeof option === "string") {
+      const label = option.trim();
+      return label ? { label: label, value: label } : null;
+    }
+    if (typeof option === "object") {
+      const label = option.label != null ? String(option.label).trim() : "";
+      const value = option.value != null ? String(option.value).trim() : label;
+      if (!label) {
+        return null;
+      }
+      return { label: label, value: value };
+    }
+    return null;
+  }
+
+  function createUi(root) {
+    root.innerHTML = [
+      '<div class="pzr-user-wrap">',
+      '  <div class="pzr-user-card">',
+      '    <h2 class="pzr-user-title"></h2>',
+      '    <div class="pzr-user-block">',
+      '      <div class="pzr-user-section">',
+      '        <div class="pzr-user-label" id="pzr-user-when-label"></div>',
+      '        <div id="pzr-user-when-chips" class="pzr-user-chips" role="listbox" aria-label="Quand"></div>',
+      "      </div>",
+      '      <div class="pzr-user-section">',
+      '        <div class="pzr-user-label" id="pzr-user-who-label"></div>',
+      '        <div id="pzr-user-who-chips" class="pzr-user-chips" role="listbox" aria-label="Avec qui"></div>',
+      "      </div>",
+      '      <div class="pzr-user-section">',
+      '        <label class="pzr-user-label" id="pzr-user-where-label" for="pzr-user-where"></label>',
+      '        <div class="pzr-user-select-wrap">',
+      '          <select id="pzr-user-where" class="pzr-user-select"></select>',
+      "        </div>",
+      "      </div>",
+      '      <button id="pzr-user-submit" class="pzr-user-submit" type="button"></button>',
+      '      <p id="pzr-user-status" class="pzr-user-status"></p>',
+      "    </div>",
+      "  </div>",
+      "</div>"
+    ].join("");
+
+    const titleNode = root.querySelector(".pzr-user-title");
+    if (titleNode) {
+      titleNode.textContent = options.title;
+    }
+    const cardNode = root.querySelector(".pzr-user-card");
+    if (cardNode) {
+      cardNode.style.setProperty("--pzr-user-title-font-size", String(options.titleFontSize || "clamp(26px,3.4vw,38px)"));
+      cardNode.style.setProperty("--pzr-user-label-font-size", String(options.labelFontSize || "clamp(18px,2.4vw,28px)"));
+      cardNode.style.setProperty("--pzr-user-chip-font-size", String(options.chipFontSize || "clamp(18px,2.6vw,30px)"));
+      cardNode.style.setProperty("--pzr-user-submit-font-size", String(options.submitFontSize || "clamp(19px,3vw,28px)"));
+    }
+
+    const whenLabel = document.getElementById("pzr-user-when-label");
+    if (whenLabel) {
+      whenLabel.textContent = options.whenLabel;
+    }
+    const whoLabel = document.getElementById("pzr-user-who-label");
+    if (whoLabel) {
+      whoLabel.textContent = options.withWhoLabel;
+    }
+    const whereLabel = document.getElementById("pzr-user-where-label");
+    if (whereLabel) {
+      whereLabel.textContent = options.whereLabel;
+    }
+
+    return {
+      root: root,
+      whenChips: document.getElementById("pzr-user-when-chips"),
+      whoChips: document.getElementById("pzr-user-who-chips"),
+      whereSelect: document.getElementById("pzr-user-where"),
+      submitButton: document.getElementById("pzr-user-submit"),
+      statusNode: document.getElementById("pzr-user-status")
+    };
+  }
+
+  function setStatus(ui, message, type) {
+    ui.statusNode.textContent = message || "";
+    ui.statusNode.className = "pzr-user-status" + (type ? " " + type : "");
+  }
+
+  function setSelectedChip(container, selectedChip) {
+    const chips = Array.from(container.querySelectorAll(".pzr-user-chip"));
+    chips.forEach(function (chip) {
+      const isSelected = chip === selectedChip;
+      chip.classList.toggle("is-selected", isSelected);
+      chip.setAttribute("aria-pressed", isSelected ? "true" : "false");
+    });
+  }
+
+  function getSelectedChipValue(container) {
+    const selected = container.querySelector(".pzr-user-chip.is-selected");
+    if (!selected) {
+      return "";
+    }
+    return String(selected.dataset.value || "").trim();
+  }
+
+  function updateSubmitButtonAvailability(ui) {
+    const whenValue = getSelectedChipValue(ui.whenChips);
+    const whoValue = getSelectedChipValue(ui.whoChips);
+    const whereValue = ui.whereSelect ? String(ui.whereSelect.value || "").trim() : "";
+    ui.submitButton.disabled = !(whenValue && whoValue && whereValue);
+  }
+
+  function buildChips(container, items, defaultValue, onChange) {
+    container.innerHTML = "";
+    const normalizedDefault = defaultValue != null ? String(defaultValue).trim() : "";
+    const hasDefault = normalizedDefault !== "";
+    const normalizedItems = items
+      .map(normalizeOption)
+      .filter(function (item) { return item; });
+
+    normalizedItems.forEach(function (item, index) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "pzr-user-chip";
+      chip.textContent = item.label;
+      chip.dataset.value = item.value;
+      const shouldSelect = hasDefault ? item.value === normalizedDefault : false;
+      if (shouldSelect) {
+        chip.classList.add("is-selected");
+        chip.setAttribute("aria-pressed", "true");
+      } else {
+        chip.setAttribute("aria-pressed", "false");
+      }
+      chip.addEventListener("click", function () {
+        if (chip.classList.contains("is-selected")) {
+          return;
+        }
+        setSelectedChip(container, chip);
+        if (typeof onChange === "function") {
+          onChange(item.value);
+        }
+      });
+      container.appendChild(chip);
+    });
+  }
+
+  function buildWhenChips(ui) {
+    const now = new Date();
+    const bookingWindow = resolveBookingWindow(now);
+    const earliestWithOffset = new Date(
+      now.getTime() + (startOffsetIntervalsValue * intervalMinutesValue * 60000)
+    );
+    const baseStart = new Date(Math.max(bookingWindow.start.getTime(), earliestWithOffset.getTime()));
+    const startSlot = ceilDateToInterval(baseStart);
+
+    const items = [{ label: options.nowLabel, value: options.nowLabel }];
+    let lastAddedTimestamp = null;
+
+    if (startSlot.getTime() <= bookingWindow.end.getTime()) {
+      for (
+        let slot = new Date(startSlot);
+        slot.getTime() <= bookingWindow.end.getTime();
+        slot = new Date(slot.getTime() + (intervalMinutesValue * 60000))
+      ) {
+        const label = toHourLabel(getMinutesOfDay(slot));
+        items.push({ label: label, value: label });
+        lastAddedTimestamp = slot.getTime();
+      }
+
+      if (lastAddedTimestamp !== bookingWindow.end.getTime()) {
+        const label = toHourLabel(getMinutesOfDay(bookingWindow.end));
+        items.push({ label: label, value: label });
+      }
+    }
+
+    buildChips(ui.whenChips, items, options.defaultWhenValue, function () {
+      updateSubmitButtonAvailability(ui);
+    });
+  }
+
+  function buildWhoChips(ui) {
+    buildChips(ui.whoChips, options.withWhoOptions, options.defaultWithWhoValue, function () {
+      updateSubmitButtonAvailability(ui);
+    });
+  }
+
+  function buildWhereOptions(ui) {
+    ui.whereSelect.innerHTML = "";
+    const normalizedDefault = options.defaultWhereValue != null
+      ? String(options.defaultWhereValue).trim()
+      : "";
+    const hasDefault = normalizedDefault !== "";
+    const normalized = options.whereOptions
+      .map(normalizeOption)
+      .filter(function (item) { return item; });
+    let matchedDefault = false;
+
+    if (options.wherePlaceholder) {
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = String(options.wherePlaceholder);
+      placeholder.disabled = true;
+      placeholder.selected = !hasDefault;
+      ui.whereSelect.appendChild(placeholder);
+    }
+
+    normalized.forEach(function (item, index) {
+      const optionNode = document.createElement("option");
+      optionNode.value = item.value;
+      optionNode.textContent = item.label;
+      if (hasDefault && item.value === normalizedDefault) {
+        optionNode.selected = true;
+        matchedDefault = true;
+      }
+      ui.whereSelect.appendChild(optionNode);
+    });
+
+    if (!matchedDefault) {
+      ui.whereSelect.value = "";
+    }
+  }
+
+  async function validateToken(token) {
+    if (!token) {
+      return false;
+    }
+    try {
+      const response = await fetch(
+        joinUrl(options.apiBase, "/api/parazar_instant/webflow/token_checking/" + encodeURIComponent(token)),
+        { method: "GET" }
+      );
+      return response.status === 200;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  let isSubmitting = false;
+  let currentToken = null;
+  let ui = null;
+  let destroyed = false;
+
+  function getState() {
+    if (!ui) {
+      return null;
+    }
+    return {
+      token: currentToken,
+      when: getSelectedChipValue(ui.whenChips),
+      with_who: getSelectedChipValue(ui.whoChips),
+      where: ui.whereSelect ? String(ui.whereSelect.value || "").trim() : ""
+    };
+  }
+
+  async function submitInstant(uiRef) {
+    if (isSubmitting || !currentToken) {
+      return;
+    }
+
+    const whenValue = getSelectedChipValue(uiRef.whenChips);
+    const whoValue = getSelectedChipValue(uiRef.whoChips);
+    const whereValue = uiRef.whereSelect ? String(uiRef.whereSelect.value || "").trim() : "";
+
+    if (!whenValue || !whoValue || !whereValue) {
+      updateSubmitButtonAvailability(uiRef);
+      return;
+    }
+
+    isSubmitting = true;
+    uiRef.submitButton.disabled = true;
+    setStatus(uiRef, "Envoi en cours...", "");
+
+    const payload = {
+      token: currentToken,
+      when: whenValue,
+      with_who: whoValue,
+      where: whereValue
+    };
+
+    try {
+      const response = await fetch(joinUrl(options.apiBase, "/api/parazar_instant/webflow"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const responsePayload = await response.json().catch(function () { return {}; });
+      if (!response.ok) {
+        const errorMessage = responsePayload && typeof responsePayload.error === "string"
+          ? responsePayload.error.trim()
+          : "";
+        throw new Error(errorMessage || "Impossible d'envoyer pour le moment.");
+      }
+
+      setStatus(uiRef, "Parazar lancé.", "success");
+      if (typeof options.onSubmitSuccess === "function") {
+        options.onSubmitSuccess({ response: response, payload: payload, data: responsePayload });
+      }
+    } catch (error) {
+      setStatus(
+        uiRef,
+        (error && error.message) ? error.message : "Impossible d'envoyer pour le moment.",
+        "error"
+      );
+      if (typeof options.onSubmitError === "function") {
+        options.onSubmitError(error);
+      }
+    } finally {
+      isSubmitting = false;
+      updateSubmitButtonAvailability(uiRef);
+    }
+  }
+
+  ensureStyles();
+  const mountNode = getMountNode();
+  const root = ensureRoot(mountNode);
+  renderLoading(root);
+
+  currentToken = getTokenFromUrl();
+  if (!currentToken) {
+    window.location.replace(options.missingTokenRedirectUrl);
+    return {
+      destroy: function () {},
+      getState: function () { return null; },
+      ready: Promise.resolve(false)
+    };
+  }
+
+  const readyPromise = (async function () {
+    const tokenIsValid = await validateToken(currentToken);
+    if (!tokenIsValid) {
+      window.location.replace(options.missingTokenRedirectUrl);
+      return false;
+    }
+    if (destroyed) {
+      return false;
+    }
+
+    ui = createUi(root);
+    ui.submitButton.textContent = options.submitLabel;
+
+    buildWhenChips(ui);
+    buildWhoChips(ui);
+    buildWhereOptions(ui);
+    updateSubmitButtonAvailability(ui);
+
+    ui.whereSelect.addEventListener("change", function () {
+      updateSubmitButtonAvailability(ui);
+    });
+
+    ui.submitButton.addEventListener("click", function () {
+      submitInstant(ui);
+    });
+
+    return true;
+  })();
+
+  return {
+    destroy: function () {
+      destroyed = true;
+      if (ui && ui.root) {
+        ui.root.remove();
+      }
+    },
+    getState: getState,
+    ready: readyPromise
+  };
+}
+
 if (typeof window !== "undefined") {
   window.getUrlPayloadId = getUrlPayloadId;
   window.requireUrlPayloadId = requireUrlPayloadId;
@@ -1223,4 +1824,5 @@ if (typeof window !== "undefined") {
   window.setupParazarSecureSetupIntent = setupParazarSecureSetupIntent;
   window.setupParazarSecurePayment = setupParazarSecurePayment;
   window.setupParazarProReservationForm = setupParazarProReservationForm;
+  window.setupParazarInstantUserForm = setupParazarInstantUserForm;
 }

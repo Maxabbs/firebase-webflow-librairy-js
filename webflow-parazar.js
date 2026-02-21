@@ -79,6 +79,45 @@ function requireUrlPayloadFormattedId(redirectUrl = "https://getapp.parazar.co/p
   return id;
 }
 
+function getParazarTokenFromUrl(tokenParam) {
+  const param = tokenParam || "token";
+  const searchParams = new URLSearchParams(window.location.search);
+  const directToken = searchParams.get(param);
+  if (directToken && directToken.trim()) {
+    return directToken.trim();
+  }
+
+  const payload = searchParams.get("payload");
+  if (!payload) {
+    return null;
+  }
+
+  try {
+    const parsedPayload = JSON.parse(payload);
+    const tokenValue = parsedPayload && parsedPayload[param];
+    if (tokenValue != null && String(tokenValue).trim()) {
+      return String(tokenValue).trim();
+    }
+  } catch (_) {
+    // ignore parsing errors
+  }
+
+  try {
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
+    const decoded = atob(padded);
+    const parsedPayload = JSON.parse(decoded);
+    const tokenValue = parsedPayload && parsedPayload[param];
+    if (tokenValue != null && String(tokenValue).trim()) {
+      return String(tokenValue).trim();
+    }
+  } catch (_) {
+    // ignore parsing errors
+  }
+
+  return null;
+}
+
 function loadStripeJs() {
   if (window.Stripe) {
     return Promise.resolve();
@@ -1216,6 +1255,83 @@ function setupParazarProReservationForm(config) {
   };
 }
 
+// Token guard for instant user flow
+function setupParazarInstantUserTokenGuard(config) {
+  const options = Object.assign({
+    apiBase: "https://backend.parazar.co",
+    tokenParam: "token",
+    token: "",
+    tokenCheckPath: "/api/parazar_instant/webflow/token_checking/",
+    tokenCheckUrl: "",
+    missingTokenRedirectUrl: "https://getapp.parazar.co/p"
+  }, config || {});
+
+  function joinUrl(base, path) {
+    const baseValue = String(base || "").trim();
+    if (!baseValue) {
+      return path;
+    }
+    if (baseValue.endsWith("/") && path.startsWith("/")) {
+      return baseValue.slice(0, -1) + path;
+    }
+    if (!baseValue.endsWith("/") && !path.startsWith("/")) {
+      return baseValue + "/" + path;
+    }
+    return baseValue + path;
+  }
+
+  function resolveTokenCheckUrl(tokenValue) {
+    if (options.tokenCheckUrl) {
+      const raw = String(options.tokenCheckUrl);
+      if (raw.indexOf("{token}") !== -1) {
+        return raw.replace("{token}", encodeURIComponent(tokenValue));
+      }
+      if (raw.endsWith("/")) {
+        return raw + encodeURIComponent(tokenValue);
+      }
+      return raw + "/" + encodeURIComponent(tokenValue);
+    }
+
+    const path = String(options.tokenCheckPath || "/api/parazar_instant/webflow/token_checking/");
+    const withToken = path.endsWith("/") ? path + encodeURIComponent(tokenValue) : path + "/" + encodeURIComponent(tokenValue);
+    return joinUrl(options.apiBase, withToken);
+  }
+
+  function redirectIfNeeded() {
+    if (options.missingTokenRedirectUrl) {
+      window.location.replace(options.missingTokenRedirectUrl);
+    }
+  }
+
+  const tokenValue = options.token
+    ? String(options.token).trim()
+    : getParazarTokenFromUrl(options.tokenParam);
+
+  const readyPromise = (async function () {
+    if (!tokenValue) {
+      redirectIfNeeded();
+      return { ok: false, token: "" };
+    }
+
+    try {
+      const response = await fetch(resolveTokenCheckUrl(tokenValue), { method: "GET" });
+      if (response.status === 200) {
+        return { ok: true, token: tokenValue, response: response };
+      }
+    } catch (_) {
+      // ignore network errors
+    }
+
+    redirectIfNeeded();
+    return { ok: false, token: tokenValue };
+  })();
+
+  return {
+    token: tokenValue || "",
+    ready: readyPromise
+  };
+}
+
 // User instant reservation widget
 function setupParazarInstantUserForm(config) {
   const options = Object.assign({
@@ -1223,9 +1339,8 @@ function setupParazarInstantUserForm(config) {
     apiBase: "https://backend.parazar.co",
     apiUrl: "",
     submitPath: "/api/parazar_instant/webflow",
-    tokenCheckPath: "/api/parazar_instant/webflow/token_checking/",
-    tokenCheckUrl: "",
     tokenParam: "token",
+    token: "",
     missingTokenRedirectUrl: "https://getapp.parazar.co/p",
     title: "Lancer mon Parazar",
     titleFontSize: "clamp(26px,3.4vw,38px)",
@@ -1282,23 +1397,6 @@ function setupParazarInstantUserForm(config) {
     }
     const path = options.submitPath || "/api/parazar_instant/webflow";
     return joinUrl(options.apiBase, String(path));
-  }
-
-  function resolveTokenCheckUrl(token) {
-    if (options.tokenCheckUrl) {
-      const raw = String(options.tokenCheckUrl);
-      if (raw.indexOf("{token}") !== -1) {
-        return raw.replace("{token}", encodeURIComponent(token));
-      }
-      if (raw.endsWith("/")) {
-        return raw + encodeURIComponent(token);
-      }
-      return raw + "/" + encodeURIComponent(token);
-    }
-
-    const path = String(options.tokenCheckPath || "/api/parazar_instant/webflow/token_checking/");
-    const withToken = path.endsWith("/") ? path + encodeURIComponent(token) : path + "/" + encodeURIComponent(token);
-    return joinUrl(options.apiBase, withToken);
   }
 
   function resolveSuccessRedirectUrl() {
@@ -1387,44 +1485,6 @@ function setupParazarInstantUserForm(config) {
     };
   }
 
-  function getTokenFromUrl() {
-    const searchParams = new URLSearchParams(window.location.search);
-    const directToken = searchParams.get(options.tokenParam);
-    if (directToken && directToken.trim()) {
-      return directToken.trim();
-    }
-
-    const payload = searchParams.get("payload");
-    if (!payload) {
-      return null;
-    }
-
-    try {
-      const parsedPayload = JSON.parse(payload);
-      const tokenValue = parsedPayload && parsedPayload[options.tokenParam];
-      if (tokenValue != null && String(tokenValue).trim()) {
-        return String(tokenValue).trim();
-      }
-    } catch (_) {
-      // ignore parsing errors
-    }
-
-    try {
-      const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-      const padded = normalized + "=".repeat((4 - (normalized.length % 4)) % 4);
-      const decoded = atob(padded);
-      const parsedPayload = JSON.parse(decoded);
-      const tokenValue = parsedPayload && parsedPayload[options.tokenParam];
-      if (tokenValue != null && String(tokenValue).trim()) {
-        return String(tokenValue).trim();
-      }
-    } catch (_) {
-      // ignore parsing errors
-    }
-
-    return null;
-  }
-
   function ensureStyles() {
     if (document.getElementById(STYLE_ID)) {
       return;
@@ -1457,7 +1517,6 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-user-status.success{color:#c0f333}",
       ".pzr-user-status.error{color:#ff8f8f}",
-      ".pzr-user-loading{padding:18px;text-align:center;font-size:16px;color:#bdbdbd}",
       "@media (max-width:480px){.pzr-user-wrap{padding:14px}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chip{flex-basis:calc((100% - 16px)/3);width:calc((100% - 16px)/3);max-width:none;height:50px}.pzr-user-submit{height:58px;font-size:24px}}"
     ].join("");
     document.head.appendChild(style);
@@ -1479,16 +1538,6 @@ function setupParazarInstantUserForm(config) {
       mountNode.appendChild(root);
     }
     return root;
-  }
-
-  function renderLoading(root) {
-    root.innerHTML = [
-      '<div class="pzr-user-wrap">',
-      '  <div class="pzr-user-card">',
-      '    <div class="pzr-user-loading">Chargement...</div>',
-      "  </div>",
-      "</div>"
-    ].join("");
   }
 
   function normalizeOption(option) {
@@ -1711,22 +1760,9 @@ function setupParazarInstantUserForm(config) {
     }
   }
 
-  async function validateToken(token) {
-    if (!token) {
-      return false;
-    }
-    try {
-      const response = await fetch(resolveTokenCheckUrl(token), { method: "GET" });
-      return response.status === 200;
-    } catch (_) {
-      return false;
-    }
-  }
-
   let isSubmitting = false;
   let currentToken = null;
   let ui = null;
-  let destroyed = false;
 
   function getState() {
     if (!ui) {
@@ -1809,11 +1845,13 @@ function setupParazarInstantUserForm(config) {
   ensureStyles();
   const mountNode = getMountNode();
   const root = ensureRoot(mountNode);
-  renderLoading(root);
-
-  currentToken = getTokenFromUrl();
+  currentToken = options.token
+    ? String(options.token).trim()
+    : getParazarTokenFromUrl(options.tokenParam);
   if (!currentToken) {
-    window.location.replace(options.missingTokenRedirectUrl);
+    if (options.missingTokenRedirectUrl) {
+      window.location.replace(options.missingTokenRedirectUrl);
+    }
     return {
       destroy: function () {},
       getState: function () { return null; },
@@ -1821,38 +1859,26 @@ function setupParazarInstantUserForm(config) {
     };
   }
 
-  const readyPromise = (async function () {
-    const tokenIsValid = await validateToken(currentToken);
-    if (!tokenIsValid) {
-      window.location.replace(options.missingTokenRedirectUrl);
-      return false;
-    }
-    if (destroyed) {
-      return false;
-    }
+  ui = createUi(root);
+  ui.submitButton.textContent = options.submitLabel;
 
-    ui = createUi(root);
-    ui.submitButton.textContent = options.submitLabel;
+  buildWhenChips(ui);
+  buildWhoChips(ui);
+  buildWhereOptions(ui);
+  updateSubmitButtonAvailability(ui);
 
-    buildWhenChips(ui);
-    buildWhoChips(ui);
-    buildWhereOptions(ui);
+  ui.whereSelect.addEventListener("change", function () {
     updateSubmitButtonAvailability(ui);
+  });
 
-    ui.whereSelect.addEventListener("change", function () {
-      updateSubmitButtonAvailability(ui);
-    });
+  ui.submitButton.addEventListener("click", function () {
+    submitInstant(ui);
+  });
 
-    ui.submitButton.addEventListener("click", function () {
-      submitInstant(ui);
-    });
-
-    return true;
-  })();
+  const readyPromise = Promise.resolve(true);
 
   return {
     destroy: function () {
-      destroyed = true;
       if (ui && ui.root) {
         ui.root.remove();
       }
@@ -1871,5 +1897,6 @@ if (typeof window !== "undefined") {
   window.setupParazarSecureSetupIntent = setupParazarSecureSetupIntent;
   window.setupParazarSecurePayment = setupParazarSecurePayment;
   window.setupParazarProReservationForm = setupParazarProReservationForm;
+  window.setupParazarInstantUserTokenGuard = setupParazarInstantUserTokenGuard;
   window.setupParazarInstantUserForm = setupParazarInstantUserForm;
 }

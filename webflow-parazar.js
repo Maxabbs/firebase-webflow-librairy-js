@@ -1221,6 +1221,10 @@ function setupParazarInstantUserForm(config) {
   const options = Object.assign({
     mountSelector: "body",
     apiBase: "https://backend.parazar.co",
+    apiUrl: "",
+    submitPath: "/api/parazar_instant/webflow",
+    tokenCheckPath: "/api/parazar_instant/webflow/token_checking/",
+    tokenCheckUrl: "",
     tokenParam: "token",
     missingTokenRedirectUrl: "https://getapp.parazar.co/p",
     title: "Lancer mon Parazar",
@@ -1245,6 +1249,7 @@ function setupParazarInstantUserForm(config) {
       "Paris - Centre",
       "Banlieue Parisienne (77, 78, 91, 92, 93, 94, 95)"
     ],
+    successRedirectUrl: "",
     submitLabel: "Lancer mon Parazar",
     minHour: "18:00",
     maxHour: "23:55",
@@ -1269,6 +1274,43 @@ function setupParazarInstantUserForm(config) {
       return baseValue + "/" + path;
     }
     return baseValue + path;
+  }
+
+  function resolveSubmitUrl() {
+    if (options.apiUrl) {
+      return String(options.apiUrl);
+    }
+    const path = options.submitPath || "/api/parazar_instant/webflow";
+    return joinUrl(options.apiBase, String(path));
+  }
+
+  function resolveTokenCheckUrl(token) {
+    if (options.tokenCheckUrl) {
+      const raw = String(options.tokenCheckUrl);
+      if (raw.indexOf("{token}") !== -1) {
+        return raw.replace("{token}", encodeURIComponent(token));
+      }
+      if (raw.endsWith("/")) {
+        return raw + encodeURIComponent(token);
+      }
+      return raw + "/" + encodeURIComponent(token);
+    }
+
+    const path = String(options.tokenCheckPath || "/api/parazar_instant/webflow/token_checking/");
+    const withToken = path.endsWith("/") ? path + encodeURIComponent(token) : path + "/" + encodeURIComponent(token);
+    return joinUrl(options.apiBase, withToken);
+  }
+
+  function resolveSuccessRedirectUrl() {
+    const target = String(options.successRedirectUrl || "").trim();
+    if (!target) {
+      return "";
+    }
+    try {
+      return new URL(target, window.location.origin).toString();
+    } catch (_) {
+      return target;
+    }
   }
 
   function toMinutes(hhmm) {
@@ -1674,10 +1716,7 @@ function setupParazarInstantUserForm(config) {
       return false;
     }
     try {
-      const response = await fetch(
-        joinUrl(options.apiBase, "/api/parazar_instant/webflow/token_checking/" + encodeURIComponent(token)),
-        { method: "GET" }
-      );
+      const response = await fetch(resolveTokenCheckUrl(token), { method: "GET" });
       return response.status === 200;
     } catch (_) {
       return false;
@@ -1727,12 +1766,20 @@ function setupParazarInstantUserForm(config) {
     };
 
     try {
-      const response = await fetch(joinUrl(options.apiBase, "/api/parazar_instant/webflow"), {
+      const response = await fetch(resolveSubmitUrl(), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
       const responsePayload = await response.json().catch(function () { return {}; });
+      const redirectUrl = resolveSuccessRedirectUrl();
+      if (response.status === 200 && redirectUrl) {
+        if (typeof options.onSubmitSuccess === "function") {
+          options.onSubmitSuccess({ response: response, payload: payload, data: responsePayload });
+        }
+        window.location.href = redirectUrl;
+        return;
+      }
       if (!response.ok) {
         const errorMessage = responsePayload && typeof responsePayload.error === "string"
           ? responsePayload.error.trim()

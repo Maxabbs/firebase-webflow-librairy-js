@@ -828,6 +828,95 @@ function setupStripeButtonsWithFirebaseAuth(buttonClass, loginRedirect, verifyEm
   });
 }
 
+function setupParazarInstantRedirectWithFirebaseToken(buttonId, config) {
+  const options = Object.assign({
+    apiBase: "https://backend.parazar.co",
+    apiUrl: "",
+    path: "/api/parazar_instant/webflow",
+    forceRefreshToken: true,
+    redirectIfNotLoggedIn: "",
+    onSuccess: null,
+    onError: null
+  }, config || {});
+
+  function joinUrl(base, path) {
+    const baseValue = String(base || "").trim();
+    if (!baseValue) {
+      return path;
+    }
+    if (baseValue.endsWith("/") && path.startsWith("/")) {
+      return baseValue.slice(0, -1) + path;
+    }
+    if (!baseValue.endsWith("/") && !path.startsWith("/")) {
+      return baseValue + "/" + path;
+    }
+    return baseValue + path;
+  }
+
+  function resolveApiUrl() {
+    if (options.apiUrl) {
+      return String(options.apiUrl);
+    }
+    return joinUrl(options.apiBase, String(options.path || "/api/parazar_instant/webflow"));
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    waitForFirebase(() => {
+      const button = document.getElementById(buttonId);
+
+      if (!button) {
+        console.warn(`[setupParazarInstantRedirectWithFirebaseToken] Bouton avec l'id "${buttonId}" introuvable.`);
+        return;
+      }
+
+      button.addEventListener("click", async (e) => {
+        e.preventDefault();
+
+        const user = firebase.auth().currentUser;
+        if (!user) {
+          if (options.redirectIfNotLoggedIn) {
+            window.location.href = options.redirectIfNotLoggedIn;
+          }
+          return;
+        }
+
+        try {
+          const token = await user.getIdToken(options.forceRefreshToken !== false);
+          const response = await fetch(resolveApiUrl(), {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          const payload = await response.json().catch(function () { return {}; });
+
+          if (response.status === 200) {
+            const targetUrl = payload && typeof payload.url === "string" ? payload.url.trim() : "";
+            if (!targetUrl) {
+              throw new Error("Réponse serveur invalide.");
+            }
+            if (typeof options.onSuccess === "function") {
+              options.onSuccess({ response: response, data: payload, targetUrl: targetUrl });
+            }
+            window.location.href = targetUrl;
+            return;
+          }
+
+          const errorMessage = payload && typeof payload.error === "string"
+            ? payload.error.trim()
+            : "";
+          throw new Error(errorMessage || "Impossible de rediriger.");
+        } catch (error) {
+          console.error("[setupParazarInstantRedirectWithFirebaseToken] Erreur:", error);
+          if (typeof options.onError === "function") {
+            options.onError(error);
+          }
+        }
+      });
+    });
+  });
+}
+
 
 /*
 <script>
@@ -893,3 +982,4 @@ window.feedUserProfilInfo = feedUserProfilInfo;
 window.setupDisplayNameSave = setupDisplayNameSave;
 window.setupTallyRedirectWithEmail = setupTallyRedirectWithEmail;
 window.setupStripeButtonsWithFirebaseAuth = setupStripeButtonsWithFirebaseAuth;
+window.setupParazarInstantRedirectWithFirebaseToken = setupParazarInstantRedirectWithFirebaseToken;

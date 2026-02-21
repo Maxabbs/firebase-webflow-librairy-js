@@ -739,6 +739,51 @@ function setupParazarSecurePayment(config) {
   return setupParazarSecureSetupIntent(config);
 }
 
+function ensureParazarInstantUserModal() {
+  const modalId = "pzr-user-instant-modal";
+  const styleId = "pzr-user-instant-modal-style";
+  const panelId = "pzr-user-instant-modal-panel";
+  const closeButtonId = "pzr-user-instant-modal-close";
+  const mountId = "pzr-user-instant-modal-mount";
+
+  let style = document.getElementById(styleId);
+  if (!style) {
+    style = document.createElement("style");
+    style.id = styleId;
+    document.head.appendChild(style);
+  }
+  style.textContent = [
+    ".pzr-user-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.66);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}",
+    ".pzr-user-modal.pzr-open{display:flex}",
+    ".pzr-user-modal-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;display:flex;justify-content:center;align-items:center}",
+    ".pzr-user-modal-close{position:absolute;top:6px;right:8px;border:0;background:transparent;font-size:28px;line-height:1;color:#ffffff;cursor:pointer;padding:4px 8px;z-index:2}",
+    ".pzr-user-modal-close:hover{opacity:.85}",
+    "@media (max-width:480px){.pzr-user-modal{padding:10px}}"
+  ].join("");
+
+  let modal = document.getElementById(modalId);
+  if (!modal) {
+    modal = document.createElement("div");
+    modal.id = modalId;
+    document.body.appendChild(modal);
+  }
+  modal.className = "pzr-user-modal";
+  modal.setAttribute("aria-hidden", "true");
+  modal.innerHTML = [
+    '<div id="' + panelId + '" class="pzr-user-modal-panel" role="dialog" aria-modal="true" aria-label="Lancer mon Parazar">',
+    '<button id="' + closeButtonId + '" class="pzr-user-modal-close" type="button" aria-label="Fermer">x</button>',
+    '<div id="' + mountId + '"></div>',
+    "</div>"
+  ].join("");
+
+  return {
+    modal: modal,
+    panel: document.getElementById(panelId),
+    closeButton: document.getElementById(closeButtonId),
+    mountNode: document.getElementById(mountId)
+  };
+}
+
 // Pro reservation widget
 function setupParazarProReservationForm(config) {
   const options = Object.assign({
@@ -1921,6 +1966,129 @@ function setupParazarInstantUserForm(config) {
   };
 }
 
+// User instant reservation modal (secure-like)
+function setupParazarInstantUserFormModal(config) {
+  const options = Object.assign({
+    buttonId: "instant-submission-id",
+    openButtonLoadingLabel: "Chargement..."
+  }, config || {});
+
+  const openButton = document.getElementById(options.buttonId);
+  if (!openButton) {
+    throw new Error("Bouton instant introuvable");
+  }
+
+  if (openButton.__parazarInstantUserModalController && typeof openButton.__parazarInstantUserModalController.destroy === "function") {
+    openButton.__parazarInstantUserModalController.destroy();
+  } else {
+    openButton.__parazarInstantUserModalController = null;
+  }
+
+  const ui = ensureParazarInstantUserModal();
+  let formController = null;
+  let isBusy = false;
+
+  function setLoadingState(active) {
+    isBusy = active;
+    openButton.disabled = active;
+    openButton.dataset.previousLabel = openButton.dataset.previousLabel || openButton.textContent;
+    if (options.openButtonLoadingLabel) {
+      openButton.textContent = active ? options.openButtonLoadingLabel : openButton.dataset.previousLabel;
+    }
+  }
+
+  function openModal() {
+    ui.modal.classList.add("pzr-open");
+    ui.modal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeModal() {
+    ui.modal.classList.remove("pzr-open");
+    ui.modal.setAttribute("aria-hidden", "true");
+    document.body.style.overflow = "";
+  }
+
+  function onModalBackdropClick(event) {
+    if (event.target === ui.modal) {
+      closeModal();
+    }
+  }
+
+  function onEscapeKeyDown(event) {
+    if (event.key === "Escape" && ui.modal.classList.contains("pzr-open")) {
+      closeModal();
+    }
+  }
+
+  function buildFormOptions() {
+    const formOptions = Object.assign({}, options);
+    delete formOptions.buttonId;
+    delete formOptions.openButtonLoadingLabel;
+
+    formOptions.mountSelector = "#pzr-user-instant-modal-mount";
+
+    if (!("wrapMinHeight" in formOptions)) formOptions.wrapMinHeight = "auto";
+    if (!("wrapPadding" in formOptions)) formOptions.wrapPadding = "0";
+    if (!("wrapPaddingMobile" in formOptions)) formOptions.wrapPaddingMobile = "0";
+    if (!("wrapBackground" in formOptions)) formOptions.wrapBackground = "transparent";
+    if (!("wrapAlign" in formOptions)) formOptions.wrapAlign = "center";
+    if (!("wrapJustify" in formOptions)) formOptions.wrapJustify = "center";
+
+    return formOptions;
+  }
+
+  async function ensureForm() {
+    if (formController || !ui.mountNode) {
+      return;
+    }
+    formController = setupParazarInstantUserForm(buildFormOptions());
+  }
+
+  async function onOpenClick() {
+    if (isBusy) {
+      return;
+    }
+    setLoadingState(true);
+    try {
+      await ensureForm();
+      openModal();
+    } catch (_) {
+      // ignore
+    } finally {
+      setLoadingState(false);
+    }
+  }
+
+  if (ui.closeButton) {
+    ui.closeButton.addEventListener("click", closeModal);
+  }
+  ui.modal.addEventListener("click", onModalBackdropClick);
+  document.addEventListener("keydown", onEscapeKeyDown);
+  openButton.addEventListener("click", onOpenClick);
+
+  const controller = {
+    open: onOpenClick,
+    close: closeModal,
+    destroy: function () {
+      closeModal();
+      openButton.removeEventListener("click", onOpenClick);
+      if (ui.closeButton) {
+        ui.closeButton.removeEventListener("click", closeModal);
+      }
+      ui.modal.removeEventListener("click", onModalBackdropClick);
+      document.removeEventListener("keydown", onEscapeKeyDown);
+      if (formController && typeof formController.destroy === "function") {
+        formController.destroy();
+      }
+      formController = null;
+    }
+  };
+
+  openButton.__parazarInstantUserModalController = controller;
+  return controller;
+}
+
 if (typeof window !== "undefined") {
   window.getUrlPayloadId = getUrlPayloadId;
   window.requireUrlPayloadId = requireUrlPayloadId;
@@ -1932,4 +2100,5 @@ if (typeof window !== "undefined") {
   window.setupParazarProReservationForm = setupParazarProReservationForm;
   window.setupParazarInstantUserTokenGuard = setupParazarInstantUserTokenGuard;
   window.setupParazarInstantUserForm = setupParazarInstantUserForm;
+  window.setupParazarInstantUserFormModal = setupParazarInstantUserFormModal;
 }

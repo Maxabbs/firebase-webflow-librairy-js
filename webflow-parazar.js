@@ -1347,6 +1347,12 @@ function setupParazarInstantUserForm(config) {
     labelFontSize: "clamp(18px,2.4vw,28px)",
     chipFontSize: "clamp(18px,2.6vw,30px)",
     submitFontSize: "clamp(19px,3vw,28px)",
+    wrapMinHeight: "100vh",
+    wrapPadding: "24px",
+    wrapPaddingMobile: "14px",
+    wrapBackground: "#000",
+    wrapAlign: "center",
+    wrapJustify: "center",
     whenLabel: "Quand ?",
     withWhoLabel: "Avec qui ?",
     whereLabel: "Où-tu te situes actuellement ?",
@@ -1494,7 +1500,7 @@ function setupParazarInstantUserForm(config) {
     style.id = STYLE_ID;
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
-      ".pzr-user-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
+      ".pzr-user-wrap{min-height:var(--pzr-user-wrap-min-height,100vh);display:flex;align-items:var(--pzr-user-wrap-align,center);justify-content:var(--pzr-user-wrap-justify,center);padding:var(--pzr-user-wrap-padding,24px);background:var(--pzr-user-wrap-bg,#000);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
       ".pzr-user-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-user-title-font-size:clamp(26px,3.4vw,38px);--pzr-user-label-font-size:clamp(18px,2.4vw,28px);--pzr-user-chip-font-size:clamp(18px,2.6vw,30px);--pzr-user-submit-font-size:clamp(19px,3vw,28px)}",
       ".pzr-user-title{margin:0 0 16px 0;font-size:var(--pzr-user-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
       ".pzr-user-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
@@ -1517,7 +1523,7 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-user-status.success{color:#c0f333}",
       ".pzr-user-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-user-wrap{padding:14px}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chip{flex-basis:calc((100% - 16px)/3);width:calc((100% - 16px)/3);max-width:none;height:50px}.pzr-user-submit{height:58px;font-size:24px}}"
+      "@media (max-width:480px){.pzr-user-wrap{padding:var(--pzr-user-wrap-padding-mobile,14px)}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chip{flex-basis:calc((100% - 16px)/3);width:calc((100% - 16px)/3);max-width:none;height:50px}.pzr-user-submit{height:58px;font-size:24px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -1589,6 +1595,15 @@ function setupParazarInstantUserForm(config) {
     const titleNode = root.querySelector(".pzr-user-title");
     if (titleNode) {
       titleNode.textContent = options.title;
+    }
+    const wrapNode = root.querySelector(".pzr-user-wrap");
+    if (wrapNode) {
+      wrapNode.style.setProperty("--pzr-user-wrap-min-height", String(options.wrapMinHeight || "100vh"));
+      wrapNode.style.setProperty("--pzr-user-wrap-padding", String(options.wrapPadding || "24px"));
+      wrapNode.style.setProperty("--pzr-user-wrap-padding-mobile", String(options.wrapPaddingMobile || "14px"));
+      wrapNode.style.setProperty("--pzr-user-wrap-bg", String(options.wrapBackground || "#000"));
+      wrapNode.style.setProperty("--pzr-user-wrap-align", String(options.wrapAlign || "center"));
+      wrapNode.style.setProperty("--pzr-user-wrap-justify", String(options.wrapJustify || "center"));
     }
     const cardNode = root.querySelector(".pzr-user-card");
     if (cardNode) {

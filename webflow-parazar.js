@@ -1345,7 +1345,8 @@ function setupParazarInstantUserForm(config) {
     title: "Lancer mon Parazar",
     titleFontSize: "clamp(26px,3.4vw,38px)",
     labelFontSize: "clamp(18px,2.4vw,28px)",
-    chipFontSize: "clamp(18px,2.6vw,30px)",
+    labelTopSpacing: "8px",
+    chipFontSize: "clamp(20px,2.6vw,34px)",
     submitFontSize: "clamp(19px,3vw,28px)",
     wrapMinHeight: "100vh",
     wrapPadding: "24px",
@@ -1501,13 +1502,13 @@ function setupParazarInstantUserForm(config) {
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
       ".pzr-user-wrap{min-height:var(--pzr-user-wrap-min-height,100vh);display:flex;align-items:var(--pzr-user-wrap-align,center);justify-content:var(--pzr-user-wrap-justify,center);padding:var(--pzr-user-wrap-padding,24px);background:var(--pzr-user-wrap-bg,#000);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
-      ".pzr-user-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-user-title-font-size:clamp(26px,3.4vw,38px);--pzr-user-label-font-size:clamp(18px,2.4vw,28px);--pzr-user-chip-font-size:clamp(18px,2.6vw,30px);--pzr-user-submit-font-size:clamp(19px,3vw,28px)}",
+      ".pzr-user-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-user-title-font-size:clamp(26px,3.4vw,38px);--pzr-user-label-font-size:clamp(18px,2.4vw,28px);--pzr-user-label-top-spacing:8px;--pzr-user-chip-font-size:clamp(20px,2.6vw,34px);--pzr-user-submit-font-size:clamp(19px,3vw,28px)}",
       ".pzr-user-title{margin:0 0 16px 0;font-size:var(--pzr-user-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
       ".pzr-user-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
       ".pzr-user-section{margin-bottom:14px}",
       ".pzr-user-section:last-of-type{margin-bottom:18px}",
-      ".pzr-user-label{display:block;margin:8px 2px 10px 2px;font-size:var(--pzr-user-label-font-size);font-weight:560;line-height:1.15;color:#e2e2e2;letter-spacing:.005em;text-align:left;text-wrap:balance}",
-      ".pzr-user-chips{display:flex;flex-wrap:wrap;gap:10px;padding:2px 2px 6px;width:100%;max-width:100%;box-sizing:border-box}",
+      ".pzr-user-label{display:block;width:100%;margin:var(--pzr-user-label-top-spacing,8px) 2px 10px 2px;font-size:var(--pzr-user-label-font-size);font-weight:560;line-height:1.15;color:#e2e2e2;letter-spacing:.005em;text-align:center;white-space:normal;text-wrap:balance}",
+      ".pzr-user-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:2px 2px 6px;width:100%;max-width:100%;box-sizing:border-box}",
       ".pzr-user-chip{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;flex:0 1 calc((100% - 20px)/3);width:calc((100% - 20px)/3);max-width:126px;min-width:0;height:56px;padding:0 6px;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-user-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
       ".pzr-user-chip:hover{border-color:rgba(255,255,255,.3)}",
       ".pzr-user-chip.is-selected{background:#c0f333;color:#0b0b0b;border-color:#c0f333;box-shadow:0 8px 20px rgba(192,243,51,.22)}",
@@ -1609,7 +1610,8 @@ function setupParazarInstantUserForm(config) {
     if (cardNode) {
       cardNode.style.setProperty("--pzr-user-title-font-size", String(options.titleFontSize || "clamp(26px,3.4vw,38px)"));
       cardNode.style.setProperty("--pzr-user-label-font-size", String(options.labelFontSize || "clamp(18px,2.4vw,28px)"));
-      cardNode.style.setProperty("--pzr-user-chip-font-size", String(options.chipFontSize || "clamp(18px,2.6vw,30px)"));
+      cardNode.style.setProperty("--pzr-user-label-top-spacing", String(options.labelTopSpacing || "8px"));
+      cardNode.style.setProperty("--pzr-user-chip-font-size", String(options.chipFontSize || "clamp(20px,2.6vw,34px)"));
       cardNode.style.setProperty("--pzr-user-submit-font-size", String(options.submitFontSize || "clamp(19px,3vw,28px)"));
     }
 

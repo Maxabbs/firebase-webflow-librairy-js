@@ -1388,8 +1388,9 @@ function setupParazarInstantUserForm(config) {
     token: "",
     missingTokenRedirectUrl: "https://getapp.parazar.co/p",
     title: "Lancer mon Parazar",
+    showTitle: false,
     titleFontSize: "clamp(26px,3.4vw,38px)",
-    labelFontSize: "clamp(18px,2.4vw,28px)",
+    labelFontSize: "",
     labelTopSpacing: "8px",
     chipFontSize: "clamp(20px,2.6vw,34px)",
     chipColumns: 3,
@@ -1400,7 +1401,9 @@ function setupParazarInstantUserForm(config) {
     chipMaxWidthMobile: "none",
     chipHeight: "56px",
     chipHeightMobile: "50px",
-    submitFontSize: "clamp(19px,3vw,28px)",
+    submitFontSize: "",
+    labelFontScale: 0.85,
+    submitFontScale: 0.9,
     wrapMinHeight: "100vh",
     wrapPadding: "24px",
     wrapPaddingMobile: "14px",
@@ -1648,7 +1651,13 @@ function setupParazarInstantUserForm(config) {
 
     const titleNode = root.querySelector(".pzr-user-title");
     if (titleNode) {
-      titleNode.textContent = options.title;
+      const titleText = String(options.title || "").trim();
+      const shouldShowTitle = options.showTitle !== false && titleText;
+      if (!shouldShowTitle) {
+        titleNode.remove();
+      } else {
+        titleNode.textContent = titleText;
+      }
     }
     const wrapNode = root.querySelector(".pzr-user-wrap");
     if (wrapNode) {
@@ -1661,8 +1670,18 @@ function setupParazarInstantUserForm(config) {
     }
     const cardNode = root.querySelector(".pzr-user-card");
     if (cardNode) {
+      const labelScale = Number(options.labelFontScale);
+      const submitScale = Number(options.submitFontScale);
+      const resolvedLabelScale = Number.isFinite(labelScale) && labelScale > 0 ? labelScale : 0.85;
+      const resolvedSubmitScale = Number.isFinite(submitScale) && submitScale > 0 ? submitScale : 0.9;
+      const resolvedLabelFont = options.labelFontSize
+        ? String(options.labelFontSize)
+        : "calc(var(--pzr-user-chip-font-size) * " + resolvedLabelScale + ")";
+      const resolvedSubmitFont = options.submitFontSize
+        ? String(options.submitFontSize)
+        : "calc(var(--pzr-user-chip-font-size) * " + resolvedSubmitScale + ")";
       cardNode.style.setProperty("--pzr-user-title-font-size", String(options.titleFontSize || "clamp(26px,3.4vw,38px)"));
-      cardNode.style.setProperty("--pzr-user-label-font-size", String(options.labelFontSize || "clamp(18px,2.4vw,28px)"));
+      cardNode.style.setProperty("--pzr-user-label-font-size", resolvedLabelFont);
       cardNode.style.setProperty("--pzr-user-label-top-spacing", String(options.labelTopSpacing || "8px"));
       cardNode.style.setProperty("--pzr-user-chip-font-size", String(options.chipFontSize || "clamp(20px,2.6vw,34px)"));
       cardNode.style.setProperty("--pzr-user-chip-columns", String(options.chipColumns || 3));
@@ -1673,7 +1692,7 @@ function setupParazarInstantUserForm(config) {
       cardNode.style.setProperty("--pzr-user-chip-max-width-mobile", String(options.chipMaxWidthMobile || "none"));
       cardNode.style.setProperty("--pzr-user-chip-height", String(options.chipHeight || "56px"));
       cardNode.style.setProperty("--pzr-user-chip-height-mobile", String(options.chipHeightMobile || "50px"));
-      cardNode.style.setProperty("--pzr-user-submit-font-size", String(options.submitFontSize || "clamp(19px,3vw,28px)"));
+      cardNode.style.setProperty("--pzr-user-submit-font-size", resolvedSubmitFont);
     }
 
     const whenLabel = document.getElementById("pzr-user-when-label");

@@ -1347,6 +1347,14 @@ function setupParazarInstantUserForm(config) {
     labelFontSize: "clamp(18px,2.4vw,28px)",
     labelTopSpacing: "8px",
     chipFontSize: "clamp(20px,2.6vw,34px)",
+    chipColumns: 3,
+    chipColumnsMobile: 3,
+    chipGap: "10px",
+    chipGapMobile: "8px",
+    chipMaxWidth: "126px",
+    chipMaxWidthMobile: "none",
+    chipHeight: "56px",
+    chipHeightMobile: "50px",
     submitFontSize: "clamp(19px,3vw,28px)",
     wrapMinHeight: "100vh",
     wrapPadding: "24px",
@@ -1508,8 +1516,8 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-section{margin-bottom:14px}",
       ".pzr-user-section:last-of-type{margin-bottom:18px}",
       ".pzr-user-label{display:block;width:100%;margin:var(--pzr-user-label-top-spacing,8px) 2px 10px 2px;font-size:var(--pzr-user-label-font-size);font-weight:560;line-height:1.15;color:#e2e2e2;letter-spacing:.005em;text-align:center;white-space:normal;text-wrap:balance}",
-      ".pzr-user-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;padding:2px 2px 6px;width:100%;max-width:100%;box-sizing:border-box}",
-      ".pzr-user-chip{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;flex:0 1 calc((100% - 20px)/3);width:calc((100% - 20px)/3);max-width:126px;min-width:0;height:56px;padding:0 6px;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-user-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
+      ".pzr-user-chips{display:grid;grid-template-columns:repeat(var(--pzr-user-chip-columns,3),minmax(0,1fr));justify-items:center;gap:var(--pzr-user-chip-gap,10px);padding:2px 2px 6px;width:100%;max-width:100%;box-sizing:border-box}",
+      ".pzr-user-chip{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;width:100%;max-width:var(--pzr-user-chip-max-width,126px);min-width:0;height:var(--pzr-user-chip-height,56px);padding:0 6px;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-user-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
       ".pzr-user-chip:hover{border-color:rgba(255,255,255,.3)}",
       ".pzr-user-chip.is-selected{background:#c0f333;color:#0b0b0b;border-color:#c0f333;box-shadow:0 8px 20px rgba(192,243,51,.22)}",
       ".pzr-user-chip:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
@@ -1524,7 +1532,7 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-user-status.success{color:#c0f333}",
       ".pzr-user-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-user-wrap{padding:var(--pzr-user-wrap-padding-mobile,14px)}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chip{flex-basis:calc((100% - 16px)/3);width:calc((100% - 16px)/3);max-width:none;height:50px}.pzr-user-submit{height:58px;font-size:24px}}"
+      "@media (max-width:480px){.pzr-user-wrap{padding:var(--pzr-user-wrap-padding-mobile,14px)}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chips{grid-template-columns:repeat(var(--pzr-user-chip-columns-mobile,var(--pzr-user-chip-columns,3)),minmax(0,1fr));gap:var(--pzr-user-chip-gap-mobile,var(--pzr-user-chip-gap,10px))}.pzr-user-chip{max-width:var(--pzr-user-chip-max-width-mobile,none);height:var(--pzr-user-chip-height-mobile,50px)}.pzr-user-submit{height:58px;font-size:24px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -1612,6 +1620,14 @@ function setupParazarInstantUserForm(config) {
       cardNode.style.setProperty("--pzr-user-label-font-size", String(options.labelFontSize || "clamp(18px,2.4vw,28px)"));
       cardNode.style.setProperty("--pzr-user-label-top-spacing", String(options.labelTopSpacing || "8px"));
       cardNode.style.setProperty("--pzr-user-chip-font-size", String(options.chipFontSize || "clamp(20px,2.6vw,34px)"));
+      cardNode.style.setProperty("--pzr-user-chip-columns", String(options.chipColumns || 3));
+      cardNode.style.setProperty("--pzr-user-chip-columns-mobile", String(options.chipColumnsMobile || options.chipColumns || 3));
+      cardNode.style.setProperty("--pzr-user-chip-gap", String(options.chipGap || "10px"));
+      cardNode.style.setProperty("--pzr-user-chip-gap-mobile", String(options.chipGapMobile || "8px"));
+      cardNode.style.setProperty("--pzr-user-chip-max-width", String(options.chipMaxWidth || "126px"));
+      cardNode.style.setProperty("--pzr-user-chip-max-width-mobile", String(options.chipMaxWidthMobile || "none"));
+      cardNode.style.setProperty("--pzr-user-chip-height", String(options.chipHeight || "56px"));
+      cardNode.style.setProperty("--pzr-user-chip-height-mobile", String(options.chipHeightMobile || "50px"));
       cardNode.style.setProperty("--pzr-user-submit-font-size", String(options.submitFontSize || "clamp(19px,3vw,28px)"));
     }
 

@@ -739,51 +739,6 @@ function setupParazarSecurePayment(config) {
   return setupParazarSecureSetupIntent(config);
 }
 
-function ensureParazarInstantUserModal() {
-  const modalId = "pzr-user-instant-modal";
-  const styleId = "pzr-user-instant-modal-style";
-  const panelId = "pzr-user-instant-modal-panel";
-  const closeButtonId = "pzr-user-instant-modal-close";
-  const mountId = "pzr-user-instant-modal-mount";
-
-  let style = document.getElementById(styleId);
-  if (!style) {
-    style = document.createElement("style");
-    style.id = styleId;
-    document.head.appendChild(style);
-  }
-  style.textContent = [
-    ".pzr-user-modal{position:fixed;inset:0;z-index:2147483000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.66);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}",
-    ".pzr-user-modal.pzr-open{display:flex}",
-    ".pzr-user-modal-panel{position:relative;width:min(560px,100%);max-height:92vh;overflow:auto;display:flex;justify-content:center;align-items:center}",
-    ".pzr-user-modal-close{position:absolute;top:6px;right:8px;border:0;background:transparent;font-size:28px;line-height:1;color:#ffffff;cursor:pointer;padding:4px 8px;z-index:2}",
-    ".pzr-user-modal-close:hover{opacity:.85}",
-    "@media (max-width:480px){.pzr-user-modal{padding:10px}}"
-  ].join("");
-
-  let modal = document.getElementById(modalId);
-  if (!modal) {
-    modal = document.createElement("div");
-    modal.id = modalId;
-    document.body.appendChild(modal);
-  }
-  modal.className = "pzr-user-modal";
-  modal.setAttribute("aria-hidden", "true");
-  modal.innerHTML = [
-    '<div id="' + panelId + '" class="pzr-user-modal-panel" role="dialog" aria-modal="true" aria-label="Lancer mon Parazar">',
-    '<button id="' + closeButtonId + '" class="pzr-user-modal-close" type="button" aria-label="Fermer">x</button>',
-    '<div id="' + mountId + '"></div>',
-    "</div>"
-  ].join("");
-
-  return {
-    modal: modal,
-    panel: document.getElementById(panelId),
-    closeButton: document.getElementById(closeButtonId),
-    mountNode: document.getElementById(mountId)
-  };
-}
-
 // Pro reservation widget
 function setupParazarProReservationForm(config) {
   const options = Object.assign({
@@ -1393,6 +1348,18 @@ function setupParazarInstantUserForm(config) {
     titleImageAlt: "Parazar",
     titleImageHeight: "",
     titleImageMaxWidth: "",
+    subtitleImageUrl: "",
+    subtitleImageAlt: "",
+    subtitleImageHeight: "",
+    subtitleImageMaxWidth: "",
+    subtitleSpacing: "8px",
+    subtitleText: "",
+    subtitleHtml: "",
+    subtitleTextColor: "#c0f333",
+    subtitleTextFontSize: "clamp(14px,2.2vw,18px)",
+    subtitleTextFontWeight: "600",
+    subtitleTextLineHeight: "1.3",
+    subtitleTextMaxWidth: "min(420px,90%)",
     titleFontSize: "clamp(26px,3.4vw,38px)",
     labelFontSize: "",
     labelTopSpacing: "8px",
@@ -1565,6 +1532,9 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-user-title-font-size:clamp(26px,3.4vw,38px);--pzr-user-label-font-size:clamp(18px,2.4vw,28px);--pzr-user-label-top-spacing:8px;--pzr-user-chip-font-size:clamp(20px,2.6vw,34px);--pzr-user-submit-font-size:clamp(19px,3vw,28px)}",
       ".pzr-user-title{margin:0 0 16px 0;font-size:var(--pzr-user-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
       ".pzr-user-title img{display:block;height:var(--pzr-user-title-image-height,32px);width:auto;max-width:var(--pzr-user-title-image-max-width,min(240px,70vw));margin:0 auto}",
+      ".pzr-user-subtitle{margin:var(--pzr-user-subtitle-spacing,8px) 0 14px 0;text-align:center}",
+      ".pzr-user-subtitle img{display:block;height:var(--pzr-user-subtitle-image-height,18px);width:auto;max-width:var(--pzr-user-subtitle-image-max-width,min(320px,80vw));margin:0 auto}",
+      ".pzr-user-subtitle-text{margin:0 auto;max-width:var(--pzr-user-subtitle-text-max-width,min(420px,90%));font-size:var(--pzr-user-subtitle-text-font-size,clamp(14px,2.2vw,18px));font-weight:var(--pzr-user-subtitle-text-font-weight,600);line-height:var(--pzr-user-subtitle-text-line-height,1.3);color:var(--pzr-user-subtitle-text-color,#c0f333);text-align:center;white-space:pre-line}",
       ".pzr-user-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
       ".pzr-user-section{margin-bottom:14px}",
       ".pzr-user-section:last-of-type{margin-bottom:18px}",
@@ -1632,6 +1602,7 @@ function setupParazarInstantUserForm(config) {
       '<div class="pzr-user-wrap">',
       '  <div class="pzr-user-card">',
       '    <h2 class="pzr-user-title"></h2>',
+      '    <div class="pzr-user-subtitle" id="pzr-user-subtitle"></div>',
       '    <div class="pzr-user-block">',
       '      <div class="pzr-user-section">',
       '        <div class="pzr-user-label" id="pzr-user-when-label"></div>',
@@ -1673,6 +1644,34 @@ function setupParazarInstantUserForm(config) {
         titleNode.textContent = titleText;
       }
     }
+    const subtitleNode = document.getElementById("pzr-user-subtitle");
+    if (subtitleNode) {
+      const subtitleHtml = String(options.subtitleHtml || "").trim();
+      const subtitleText = String(options.subtitleText || "").trim();
+      const subtitleImageUrl = String(options.subtitleImageUrl || "").trim();
+      const subtitleAlt = String(options.subtitleImageAlt || "").trim();
+      if (subtitleHtml || subtitleText) {
+        subtitleNode.textContent = "";
+        const textNode = document.createElement("p");
+        textNode.className = "pzr-user-subtitle-text";
+        if (subtitleHtml) {
+          textNode.innerHTML = subtitleHtml;
+        } else {
+          textNode.textContent = subtitleText;
+        }
+        subtitleNode.appendChild(textNode);
+      } else if (subtitleImageUrl) {
+        subtitleNode.textContent = "";
+        const img = document.createElement("img");
+        img.src = subtitleImageUrl;
+        img.alt = subtitleAlt || "Parazar";
+        img.loading = "lazy";
+        img.decoding = "async";
+        subtitleNode.appendChild(img);
+      } else {
+        subtitleNode.remove();
+      }
+    }
     const wrapNode = root.querySelector(".pzr-user-wrap");
     if (wrapNode) {
       wrapNode.style.setProperty("--pzr-user-wrap-min-height", String(options.wrapMinHeight || "100vh"));
@@ -1700,12 +1699,44 @@ function setupParazarInstantUserForm(config) {
       const resolvedTitleImageMaxWidth = options.titleImageMaxWidth
         ? String(options.titleImageMaxWidth)
         : "min(240px,70vw)";
+      const resolvedSubtitleImageHeight = options.subtitleImageHeight
+        ? String(options.subtitleImageHeight)
+        : "18px";
+      const resolvedSubtitleImageMaxWidth = options.subtitleImageMaxWidth
+        ? String(options.subtitleImageMaxWidth)
+        : "min(320px,80vw)";
+      const resolvedSubtitleSpacing = options.subtitleSpacing
+        ? String(options.subtitleSpacing)
+        : "8px";
+      const resolvedSubtitleTextColor = options.subtitleTextColor
+        ? String(options.subtitleTextColor)
+        : "#c0f333";
+      const resolvedSubtitleTextFontSize = options.subtitleTextFontSize
+        ? String(options.subtitleTextFontSize)
+        : "clamp(14px,2.2vw,18px)";
+      const resolvedSubtitleTextFontWeight = options.subtitleTextFontWeight
+        ? String(options.subtitleTextFontWeight)
+        : "600";
+      const resolvedSubtitleTextLineHeight = options.subtitleTextLineHeight
+        ? String(options.subtitleTextLineHeight)
+        : "1.3";
+      const resolvedSubtitleTextMaxWidth = options.subtitleTextMaxWidth
+        ? String(options.subtitleTextMaxWidth)
+        : "min(420px,90%)";
       cardNode.style.setProperty("--pzr-user-title-font-size", String(options.titleFontSize || "clamp(26px,3.4vw,38px)"));
       cardNode.style.setProperty("--pzr-user-label-font-size", resolvedLabelFont);
       cardNode.style.setProperty("--pzr-user-label-top-spacing", String(options.labelTopSpacing || "8px"));
       cardNode.style.setProperty("--pzr-user-chip-font-size", String(options.chipFontSize || "clamp(20px,2.6vw,34px)"));
       cardNode.style.setProperty("--pzr-user-title-image-height", resolvedTitleImageHeight);
       cardNode.style.setProperty("--pzr-user-title-image-max-width", resolvedTitleImageMaxWidth);
+      cardNode.style.setProperty("--pzr-user-subtitle-image-height", resolvedSubtitleImageHeight);
+      cardNode.style.setProperty("--pzr-user-subtitle-image-max-width", resolvedSubtitleImageMaxWidth);
+      cardNode.style.setProperty("--pzr-user-subtitle-spacing", resolvedSubtitleSpacing);
+      cardNode.style.setProperty("--pzr-user-subtitle-text-color", resolvedSubtitleTextColor);
+      cardNode.style.setProperty("--pzr-user-subtitle-text-font-size", resolvedSubtitleTextFontSize);
+      cardNode.style.setProperty("--pzr-user-subtitle-text-font-weight", resolvedSubtitleTextFontWeight);
+      cardNode.style.setProperty("--pzr-user-subtitle-text-line-height", resolvedSubtitleTextLineHeight);
+      cardNode.style.setProperty("--pzr-user-subtitle-text-max-width", resolvedSubtitleTextMaxWidth);
       cardNode.style.setProperty("--pzr-user-chip-columns", String(options.chipColumns || 3));
       cardNode.style.setProperty("--pzr-user-chip-columns-mobile", String(options.chipColumnsMobile || options.chipColumns || 3));
       cardNode.style.setProperty("--pzr-user-chip-gap", String(options.chipGap || "10px"));
@@ -2007,129 +2038,6 @@ function setupParazarInstantUserForm(config) {
   };
 }
 
-// User instant reservation modal (secure-like)
-function setupParazarInstantUserFormModal(config) {
-  const options = Object.assign({
-    buttonId: "instant-submission-id",
-    openButtonLoadingLabel: "Chargement..."
-  }, config || {});
-
-  const openButton = document.getElementById(options.buttonId);
-  if (!openButton) {
-    throw new Error("Bouton instant introuvable");
-  }
-
-  if (openButton.__parazarInstantUserModalController && typeof openButton.__parazarInstantUserModalController.destroy === "function") {
-    openButton.__parazarInstantUserModalController.destroy();
-  } else {
-    openButton.__parazarInstantUserModalController = null;
-  }
-
-  const ui = ensureParazarInstantUserModal();
-  let formController = null;
-  let isBusy = false;
-
-  function setLoadingState(active) {
-    isBusy = active;
-    openButton.disabled = active;
-    openButton.dataset.previousLabel = openButton.dataset.previousLabel || openButton.textContent;
-    if (options.openButtonLoadingLabel) {
-      openButton.textContent = active ? options.openButtonLoadingLabel : openButton.dataset.previousLabel;
-    }
-  }
-
-  function openModal() {
-    ui.modal.classList.add("pzr-open");
-    ui.modal.setAttribute("aria-hidden", "false");
-    document.body.style.overflow = "hidden";
-  }
-
-  function closeModal() {
-    ui.modal.classList.remove("pzr-open");
-    ui.modal.setAttribute("aria-hidden", "true");
-    document.body.style.overflow = "";
-  }
-
-  function onModalBackdropClick(event) {
-    if (event.target === ui.modal) {
-      closeModal();
-    }
-  }
-
-  function onEscapeKeyDown(event) {
-    if (event.key === "Escape" && ui.modal.classList.contains("pzr-open")) {
-      closeModal();
-    }
-  }
-
-  function buildFormOptions() {
-    const formOptions = Object.assign({}, options);
-    delete formOptions.buttonId;
-    delete formOptions.openButtonLoadingLabel;
-
-    formOptions.mountSelector = "#pzr-user-instant-modal-mount";
-
-    if (!("wrapMinHeight" in formOptions)) formOptions.wrapMinHeight = "auto";
-    if (!("wrapPadding" in formOptions)) formOptions.wrapPadding = "0";
-    if (!("wrapPaddingMobile" in formOptions)) formOptions.wrapPaddingMobile = "0";
-    if (!("wrapBackground" in formOptions)) formOptions.wrapBackground = "transparent";
-    if (!("wrapAlign" in formOptions)) formOptions.wrapAlign = "center";
-    if (!("wrapJustify" in formOptions)) formOptions.wrapJustify = "center";
-
-    return formOptions;
-  }
-
-  async function ensureForm() {
-    if (formController || !ui.mountNode) {
-      return;
-    }
-    formController = setupParazarInstantUserForm(buildFormOptions());
-  }
-
-  async function onOpenClick() {
-    if (isBusy) {
-      return;
-    }
-    setLoadingState(true);
-    try {
-      await ensureForm();
-      openModal();
-    } catch (_) {
-      // ignore
-    } finally {
-      setLoadingState(false);
-    }
-  }
-
-  if (ui.closeButton) {
-    ui.closeButton.addEventListener("click", closeModal);
-  }
-  ui.modal.addEventListener("click", onModalBackdropClick);
-  document.addEventListener("keydown", onEscapeKeyDown);
-  openButton.addEventListener("click", onOpenClick);
-
-  const controller = {
-    open: onOpenClick,
-    close: closeModal,
-    destroy: function () {
-      closeModal();
-      openButton.removeEventListener("click", onOpenClick);
-      if (ui.closeButton) {
-        ui.closeButton.removeEventListener("click", closeModal);
-      }
-      ui.modal.removeEventListener("click", onModalBackdropClick);
-      document.removeEventListener("keydown", onEscapeKeyDown);
-      if (formController && typeof formController.destroy === "function") {
-        formController.destroy();
-      }
-      formController = null;
-    }
-  };
-
-  openButton.__parazarInstantUserModalController = controller;
-  return controller;
-}
-
 if (typeof window !== "undefined") {
   window.getUrlPayloadId = getUrlPayloadId;
   window.requireUrlPayloadId = requireUrlPayloadId;
@@ -2141,5 +2049,4 @@ if (typeof window !== "undefined") {
   window.setupParazarProReservationForm = setupParazarProReservationForm;
   window.setupParazarInstantUserTokenGuard = setupParazarInstantUserTokenGuard;
   window.setupParazarInstantUserForm = setupParazarInstantUserForm;
-  window.setupParazarInstantUserFormModal = setupParazarInstantUserFormModal;
 }

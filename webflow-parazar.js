@@ -1385,6 +1385,7 @@ function setupParazarInstantUserForm(config) {
     wrapBackground: "#000",
     wrapAlign: "center",
     wrapJustify: "center",
+    lockHorizontalScroll: true,
     whenLabel: "Quand ?",
     withWhoLabel: "Avec qui ?",
     whereLabel: "Où-tu te situes actuellement ?",
@@ -1533,8 +1534,8 @@ function setupParazarInstantUserForm(config) {
     style.id = STYLE_ID;
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
-      ".pzr-user-wrap{min-height:var(--pzr-user-wrap-min-height,100vh);display:flex;align-items:var(--pzr-user-wrap-align,center);justify-content:var(--pzr-user-wrap-justify,center);padding:var(--pzr-user-wrap-padding,24px);background:var(--pzr-user-wrap-bg,#000);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
-      ".pzr-user-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-user-title-font-size:clamp(26px,3.4vw,38px);--pzr-user-label-font-size:clamp(18px,2.4vw,28px);--pzr-user-label-top-spacing:8px;--pzr-user-chip-font-size:clamp(20px,2.6vw,34px);--pzr-user-submit-font-size:clamp(19px,3vw,28px)}",
+      ".pzr-user-wrap{min-height:var(--pzr-user-wrap-min-height,100vh);display:flex;align-items:var(--pzr-user-wrap-align,center);justify-content:var(--pzr-user-wrap-justify,center);padding:var(--pzr-user-wrap-padding,24px);background:var(--pzr-user-wrap-bg,#000);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;width:100%;overflow-x:hidden}",
+      ".pzr-user-card{position:relative;width:min(520px,95vw);max-width:100%;border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-user-title-font-size:clamp(26px,3.4vw,38px);--pzr-user-label-font-size:clamp(18px,2.4vw,28px);--pzr-user-label-top-spacing:8px;--pzr-user-chip-font-size:clamp(20px,2.6vw,34px);--pzr-user-submit-font-size:clamp(19px,3vw,28px)}",
       ".pzr-user-title{margin:0 0 16px 0;font-size:var(--pzr-user-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
       ".pzr-user-title img{display:block;height:var(--pzr-user-title-image-height,32px);width:auto;max-width:var(--pzr-user-title-image-max-width,min(240px,70vw));margin:0 auto}",
       ".pzr-user-subtitle{margin:var(--pzr-user-subtitle-spacing,8px) 0 14px 0;text-align:center}",
@@ -1582,6 +1583,33 @@ function setupParazarInstantUserForm(config) {
       mountNode.appendChild(root);
     }
     return root;
+  }
+
+  function applyHorizontalScrollLock() {
+    if (!options.lockHorizontalScroll) {
+      return;
+    }
+    const htmlEl = document.documentElement;
+    if (htmlEl && !htmlEl.dataset.pzrOverflowX) {
+      htmlEl.dataset.pzrOverflowX = htmlEl.style.overflowX || "";
+      htmlEl.style.overflowX = "hidden";
+    }
+    if (document.body && !document.body.dataset.pzrOverflowX) {
+      document.body.dataset.pzrOverflowX = document.body.style.overflowX || "";
+      document.body.style.overflowX = "hidden";
+    }
+  }
+
+  function releaseHorizontalScrollLock() {
+    const htmlEl = document.documentElement;
+    if (htmlEl && htmlEl.dataset.pzrOverflowX != null) {
+      htmlEl.style.overflowX = htmlEl.dataset.pzrOverflowX;
+      delete htmlEl.dataset.pzrOverflowX;
+    }
+    if (document.body && document.body.dataset.pzrOverflowX != null) {
+      document.body.style.overflowX = document.body.dataset.pzrOverflowX;
+      delete document.body.dataset.pzrOverflowX;
+    }
   }
 
   function normalizeOption(option) {
@@ -2090,6 +2118,7 @@ function setupParazarInstantUserForm(config) {
   ensureStyles();
   const mountNode = getMountNode();
   const root = ensureRoot(mountNode);
+  applyHorizontalScrollLock();
   currentToken = options.token
     ? String(options.token).trim()
     : getParazarTokenFromUrl(options.tokenParam);
@@ -2098,7 +2127,9 @@ function setupParazarInstantUserForm(config) {
       window.location.replace(options.missingTokenRedirectUrl);
     }
     return {
-      destroy: function () {},
+      destroy: function () {
+        releaseHorizontalScrollLock();
+      },
       getState: function () { return null; },
       ready: Promise.resolve(false)
     };
@@ -2114,6 +2145,7 @@ function setupParazarInstantUserForm(config) {
         if (ui && ui.root) {
           ui.root.remove();
         }
+        releaseHorizontalScrollLock();
       },
       getState: getState,
       ready: Promise.resolve(false)
@@ -2139,6 +2171,7 @@ function setupParazarInstantUserForm(config) {
       if (ui && ui.root) {
         ui.root.remove();
       }
+      releaseHorizontalScrollLock();
     },
     getState: getState,
     ready: readyPromise

@@ -401,10 +401,47 @@ function setupParazarSecureSetupIntent(config) {
         const response = await fetch(options.apiBase + "/api/parazar/secure/" + encodeURIComponent(submissionToken), {
           method: "GET"
         });
+        const payload = await response.json().catch(function () { return {}; });
 
         if (response.status === 200) {
+          const clientType = payload && payload.client_type ? String(payload.client_type) : "";
+          if (clientType) {
+            applyClientTypeSettings(clientType);
+          }
           stopStatusPolling();
           window.location.href = resolveSuccessRedirectUrl();
+          return;
+        }
+
+        if (response.status === 202) {
+          return;
+        }
+
+        if (response.status === 302) {
+          stopStatusPolling();
+          const redirectUrl = response.redirected ? response.url : (response.headers.get("Location") || "");
+          if (redirectUrl) {
+            window.location.href = redirectUrl;
+            return;
+          }
+        }
+
+        if (response.status === 408 || response.status === 409) {
+          stopStatusPolling();
+          showError(payload && payload.state === "timeout"
+            ? "Temps expiré. Réessaie."
+            : "Une erreur est survenue. Réessaie.");
+          openModal();
+          return;
+        }
+
+        if (response.status === 400 || response.status === 403) {
+          stopStatusPolling();
+          const message = payload && (payload.error || payload.message)
+            ? String(payload.error || payload.message).trim()
+            : "Impossible d'envoyer pour le moment.";
+          showError(message || "Impossible d'envoyer pour le moment.");
+          openModal();
           return;
         }
 

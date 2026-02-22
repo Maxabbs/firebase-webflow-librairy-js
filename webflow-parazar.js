@@ -1372,6 +1372,9 @@ function setupParazarInstantUserForm(config) {
     chipMaxWidthMobile: "none",
     chipHeight: "56px",
     chipHeightMobile: "50px",
+    chipWideSpan: 2,
+    chipWideMaxWidth: "260px",
+    chipWideMaxWidthMobile: "none",
     submitFontSize: "",
     labelFontScale: 0.85,
     submitFontScale: 0.9,
@@ -1389,6 +1392,7 @@ function setupParazarInstantUserForm(config) {
     defaultWithWhoValue: "",
     defaultWhereValue: "",
     wherePlaceholder: "Sélectionne ta zone",
+    whereWideMatch: "banlieue",
     withWhoOptions: ["Solo", "Une pote 💃", "Un pote 🕺"],
     whereOptions: [
       "Paris - Ouest",
@@ -1541,6 +1545,7 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-label{display:block;width:100%;margin:var(--pzr-user-label-top-spacing,8px) 2px 10px 2px;font-size:var(--pzr-user-label-font-size);font-weight:560;line-height:1.15;color:#e2e2e2;letter-spacing:.005em;text-align:center;white-space:normal;text-wrap:balance}",
       ".pzr-user-chips{display:grid;grid-template-columns:repeat(var(--pzr-user-chip-columns,3),minmax(0,1fr));justify-items:center;gap:var(--pzr-user-chip-gap,10px);padding:2px 2px 6px;width:100%;max-width:100%;box-sizing:border-box}",
       ".pzr-user-chip{display:flex;align-items:center;justify-content:center;text-align:center;box-sizing:border-box;width:100%;max-width:var(--pzr-user-chip-max-width,126px);min-width:0;height:var(--pzr-user-chip-height,56px);padding:0 6px;border-radius:16px;border:0.5px solid rgba(255,255,255,.16);background:#1a1d23;color:#fff;font-family:inherit;font-size:var(--pzr-user-chip-font-size);font-weight:520;letter-spacing:-0.01em;cursor:pointer;transition:all .14s ease}",
+      ".pzr-user-chip.is-wide{grid-column:span var(--pzr-user-chip-wide-span,2);max-width:var(--pzr-user-chip-wide-max-width,260px)}",
       ".pzr-user-chip:hover{border-color:rgba(255,255,255,.3)}",
       ".pzr-user-chip.is-selected{background:#c0f333;color:#0b0b0b;border-color:#c0f333;box-shadow:0 8px 20px rgba(192,243,51,.22)}",
       ".pzr-user-chip:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.15)}",
@@ -1555,7 +1560,7 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-user-status.success{color:#c0f333}",
       ".pzr-user-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-user-wrap{padding:var(--pzr-user-wrap-padding-mobile,14px)}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chips{grid-template-columns:repeat(var(--pzr-user-chip-columns-mobile,var(--pzr-user-chip-columns,3)),minmax(0,1fr));gap:var(--pzr-user-chip-gap-mobile,var(--pzr-user-chip-gap,10px))}.pzr-user-chip{max-width:var(--pzr-user-chip-max-width-mobile,none);height:var(--pzr-user-chip-height-mobile,50px)}.pzr-user-submit{height:58px;font-size:24px}}"
+      "@media (max-width:480px){.pzr-user-wrap{padding:var(--pzr-user-wrap-padding-mobile,14px)}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chips{grid-template-columns:repeat(var(--pzr-user-chip-columns-mobile,var(--pzr-user-chip-columns,3)),minmax(0,1fr));gap:var(--pzr-user-chip-gap-mobile,var(--pzr-user-chip-gap,10px))}.pzr-user-chip{max-width:var(--pzr-user-chip-max-width-mobile,none);height:var(--pzr-user-chip-height-mobile,50px)}.pzr-user-chip.is-wide{max-width:var(--pzr-user-chip-wide-max-width-mobile,var(--pzr-user-chip-wide-max-width,260px))}.pzr-user-submit{height:58px;font-size:24px}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -1613,10 +1618,8 @@ function setupParazarInstantUserForm(config) {
       '        <div id="pzr-user-who-chips" class="pzr-user-chips" role="listbox" aria-label="Avec qui"></div>',
       "      </div>",
       '      <div class="pzr-user-section">',
-      '        <label class="pzr-user-label" id="pzr-user-where-label" for="pzr-user-where"></label>',
-      '        <div class="pzr-user-select-wrap">',
-      '          <select id="pzr-user-where" class="pzr-user-select"></select>',
-      "        </div>",
+      '        <div class="pzr-user-label" id="pzr-user-where-label"></div>',
+      '        <div id="pzr-user-where-chips" class="pzr-user-chips" role="listbox" aria-label="Où tu te situes"></div>',
       "      </div>",
       '      <button id="pzr-user-submit" class="pzr-user-submit" type="button"></button>',
       '      <p id="pzr-user-status" class="pzr-user-status"></p>',
@@ -1745,6 +1748,9 @@ function setupParazarInstantUserForm(config) {
       cardNode.style.setProperty("--pzr-user-chip-max-width-mobile", String(options.chipMaxWidthMobile || "none"));
       cardNode.style.setProperty("--pzr-user-chip-height", String(options.chipHeight || "56px"));
       cardNode.style.setProperty("--pzr-user-chip-height-mobile", String(options.chipHeightMobile || "50px"));
+      cardNode.style.setProperty("--pzr-user-chip-wide-span", String(options.chipWideSpan || 2));
+      cardNode.style.setProperty("--pzr-user-chip-wide-max-width", String(options.chipWideMaxWidth || "260px"));
+      cardNode.style.setProperty("--pzr-user-chip-wide-max-width-mobile", String(options.chipWideMaxWidthMobile || "none"));
       cardNode.style.setProperty("--pzr-user-submit-font-size", resolvedSubmitFont);
     }
 
@@ -1765,7 +1771,7 @@ function setupParazarInstantUserForm(config) {
       root: root,
       whenChips: document.getElementById("pzr-user-when-chips"),
       whoChips: document.getElementById("pzr-user-who-chips"),
-      whereSelect: document.getElementById("pzr-user-where"),
+      whereChips: document.getElementById("pzr-user-where-chips"),
       submitButton: document.getElementById("pzr-user-submit"),
       statusNode: document.getElementById("pzr-user-status")
     };
@@ -1796,7 +1802,7 @@ function setupParazarInstantUserForm(config) {
   function updateSubmitButtonAvailability(ui) {
     const whenValue = getSelectedChipValue(ui.whenChips);
     const whoValue = getSelectedChipValue(ui.whoChips);
-    const whereValue = ui.whereSelect ? String(ui.whereSelect.value || "").trim() : "";
+    const whereValue = ui.whereChips ? getSelectedChipValue(ui.whereChips) : "";
     ui.submitButton.disabled = !(whenValue && whoValue && whereValue);
   }
 
@@ -1876,40 +1882,46 @@ function setupParazarInstantUserForm(config) {
     scheduleChipLayout(ui);
   }
 
-  function buildWhereOptions(ui) {
-    ui.whereSelect.innerHTML = "";
+  function buildWhereChips(ui) {
     const normalizedDefault = options.defaultWhereValue != null
       ? String(options.defaultWhereValue).trim()
       : "";
-    const hasDefault = normalizedDefault !== "";
+    const wideMatch = String(options.whereWideMatch || "banlieue").toLowerCase();
+
     const normalized = options.whereOptions
       .map(normalizeOption)
       .filter(function (item) { return item; });
-    let matchedDefault = false;
 
-    if (options.wherePlaceholder) {
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = String(options.wherePlaceholder);
-      placeholder.disabled = true;
-      placeholder.selected = !hasDefault;
-      ui.whereSelect.appendChild(placeholder);
+    let wideItem = null;
+    const regularItems = [];
+    normalized.forEach(function (item) {
+      const labelLower = String(item.label || "").toLowerCase();
+      const valueLower = String(item.value || "").toLowerCase();
+      if (wideMatch && (labelLower.indexOf(wideMatch) !== -1 || valueLower.indexOf(wideMatch) !== -1)) {
+        if (!wideItem) {
+          wideItem = item;
+          return;
+        }
+      }
+      regularItems.push(item);
+    });
+    if (wideItem) {
+      regularItems.push(wideItem);
     }
 
-    normalized.forEach(function (item, index) {
-      const optionNode = document.createElement("option");
-      optionNode.value = item.value;
-      optionNode.textContent = item.label;
-      if (hasDefault && item.value === normalizedDefault) {
-        optionNode.selected = true;
-        matchedDefault = true;
-      }
-      ui.whereSelect.appendChild(optionNode);
+    buildChips(ui.whereChips, regularItems, normalizedDefault, function () {
+      updateSubmitButtonAvailability(ui);
     });
 
-    if (!matchedDefault) {
-      ui.whereSelect.value = "";
+    if (wideItem) {
+      const chips = Array.from(ui.whereChips.querySelectorAll(".pzr-user-chip"));
+      chips.forEach(function (chip) {
+        if (String(chip.dataset.value || "") === String(wideItem.value || "")) {
+          chip.classList.add("is-wide");
+        }
+      });
     }
+    scheduleChipLayout(ui);
   }
 
   let isSubmitting = false;
@@ -1967,6 +1979,7 @@ function setupParazarInstantUserForm(config) {
     window.requestAnimationFrame(function () {
       applyChipLayout(uiRef.whenChips);
       applyChipLayout(uiRef.whoChips);
+      applyChipLayout(uiRef.whereChips);
     });
   }
 
@@ -1978,7 +1991,7 @@ function setupParazarInstantUserForm(config) {
       token: currentToken,
       when: getSelectedChipValue(ui.whenChips),
       with_who: getSelectedChipValue(ui.whoChips),
-      where: ui.whereSelect ? String(ui.whereSelect.value || "").trim() : ""
+      where: ui.whereChips ? getSelectedChipValue(ui.whereChips) : ""
     };
   }
 
@@ -1989,7 +2002,7 @@ function setupParazarInstantUserForm(config) {
 
     const whenValue = getSelectedChipValue(uiRef.whenChips);
     const whoValue = getSelectedChipValue(uiRef.whoChips);
-    const whereValue = uiRef.whereSelect ? String(uiRef.whereSelect.value || "").trim() : "";
+    const whereValue = uiRef.whereChips ? getSelectedChipValue(uiRef.whereChips) : "";
 
     if (!whenValue || !whoValue || !whereValue) {
       updateSubmitButtonAvailability(uiRef);
@@ -2070,12 +2083,8 @@ function setupParazarInstantUserForm(config) {
 
   buildWhenChips(ui);
   buildWhoChips(ui);
-  buildWhereOptions(ui);
+  buildWhereChips(ui);
   updateSubmitButtonAvailability(ui);
-
-  ui.whereSelect.addEventListener("change", function () {
-    updateSubmitButtonAvailability(ui);
-  });
 
   ui.submitButton.addEventListener("click", function () {
     submitInstant(ui);

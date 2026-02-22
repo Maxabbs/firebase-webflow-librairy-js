@@ -1395,7 +1395,7 @@ function setupParazarInstantUserTokenGuard(config) {
       return raw + "/" + encodeURIComponent(tokenValue);
     }
 
-    const path = String(options.tokenCheckPath || "/api/parazar_instant/webflow/token_checking/");
+    const path = String(options.tokenCheckPath || "/api/parazar_instant/webflow/submission_token_checking/");
     const withToken = path.endsWith("/") ? path + encodeURIComponent(tokenValue) : path + "/" + encodeURIComponent(tokenValue);
     return joinUrl(options.apiBase, withToken);
   }

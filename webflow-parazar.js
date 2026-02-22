@@ -746,6 +746,18 @@ function setupParazarProReservationForm(config) {
     apiUrl: "https://backend.parazar.co/api/pro/tables",
     missingIdRedirectUrl: "https://pro.parazar.co",
     title: "Tables disponibles",
+    titleImageUrl: "https://cdn.prod.website-files.com/6665627cae20cb25d5ffa6af/698cb46b188c3fb591e3ffa1_Parazar_Logo_PureWhite_RVB.svg",
+    titleImageAlt: "Parazar",
+    titleImageHeight: "56px",
+    titleImageMaxWidth: "260px",
+    subtitleHtml: "Tables disponibles pour ce soir",
+    subtitleText: "",
+    subtitleTextColor: "#c0f333",
+    subtitleTextFontSize: "clamp(14px,2.2vw,18px)",
+    subtitleTextFontWeight: "600",
+    subtitleTextLineHeight: "1.3",
+    subtitleTextMaxWidth: "min(420px,90%)",
+    subtitleSpacing: "6px",
     titleFontSize: "clamp(26px,3.4vw,38px)",
     timeLabelFontSize: "clamp(18px,2.4vw,28px)",
     timeLabelTopSpacing: "8px",
@@ -907,7 +919,10 @@ function setupParazarProReservationForm(config) {
       ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
       ".pzr-pro-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-pro-title-font-size:clamp(26px,3.4vw,38px);--pzr-pro-time-label-font-size:clamp(18px,2.4vw,28px);--pzr-pro-time-label-top-spacing:8px;--pzr-pro-time-chip-font-size:clamp(20px,2.6vw,34px);--pzr-pro-counter-font-size:clamp(19px,3.2vw,29px);--pzr-pro-counter-font-weight:520;--pzr-pro-step-size:clamp(44px,7vw,56px);--pzr-pro-step-font-size:clamp(36px,5.5vw,46px);--pzr-pro-step-font-weight:500}",
       ".pzr-pro-card::after{display:none}",
-      ".pzr-pro-title{margin:0 0 16px 0;font-size:var(--pzr-pro-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
+      ".pzr-pro-title{margin:0 0 8px 0;font-size:var(--pzr-pro-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
+      ".pzr-pro-title img{display:block;height:var(--pzr-pro-title-image-height,32px);width:auto;max-width:var(--pzr-pro-title-image-max-width,min(240px,70vw));margin:0 auto}",
+      ".pzr-pro-subtitle{margin:var(--pzr-pro-subtitle-spacing,6px) 0 16px 0;text-align:center}",
+      ".pzr-pro-subtitle-text{margin:0 auto;max-width:var(--pzr-pro-subtitle-text-max-width,min(420px,90%));font-size:var(--pzr-pro-subtitle-text-font-size,clamp(14px,2.2vw,18px));font-weight:var(--pzr-pro-subtitle-text-font-weight,600);line-height:var(--pzr-pro-subtitle-text-line-height,1.3);color:var(--pzr-pro-subtitle-text-color,#c0f333);text-align:center;white-space:pre-line}",
       ".pzr-pro-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
       ".pzr-pro-row{display:flex;align-items:center;justify-content:space-between;min-height:72px;padding:0 18px;border-radius:14px;border:0.5px solid rgba(255,255,255,.16);background:#101010;margin-bottom:12px;font-size:var(--pzr-pro-counter-font-size);font-weight:var(--pzr-pro-counter-font-weight);letter-spacing:-0.005em;line-height:1.1}",
       ".pzr-pro-row:last-child{margin-bottom:0}",
@@ -957,6 +972,7 @@ function setupParazarProReservationForm(config) {
       '<div class="pzr-pro-wrap">',
       '  <div class="pzr-pro-card">',
       '    <h2 class="pzr-pro-title"></h2>',
+      '    <div class="pzr-pro-subtitle" id="pzr-pro-subtitle"></div>',
       '    <div class="pzr-pro-block">',
       '      <div class="pzr-pro-row">',
       '        <span id="pzr-pro-tables-label"></span>',
@@ -985,11 +1001,52 @@ function setupParazarProReservationForm(config) {
 
     const titleNode = root.querySelector(".pzr-pro-title");
     if (titleNode) {
-      titleNode.textContent = options.title;
+      const titleImageUrl = String(options.titleImageUrl || "").trim();
+      const titleAlt = String(options.titleImageAlt || "").trim();
+      const titleText = String(options.title || "").trim();
+      titleNode.textContent = "";
+      if (titleImageUrl) {
+        const img = document.createElement("img");
+        img.src = titleImageUrl;
+        img.alt = titleAlt || "Parazar";
+        img.loading = "lazy";
+        img.decoding = "async";
+        titleNode.appendChild(img);
+      } else if (titleText) {
+        titleNode.textContent = titleText;
+      }
+    }
+    const subtitleNode = document.getElementById("pzr-pro-subtitle");
+    if (subtitleNode) {
+      const subtitleHtml = String(options.subtitleHtml || "").trim();
+      const subtitleText = String(options.subtitleText || "").trim();
+      if (subtitleHtml || subtitleText) {
+        subtitleNode.textContent = "";
+        const textNode = document.createElement("p");
+        textNode.className = "pzr-pro-subtitle-text";
+        if (subtitleHtml) {
+          textNode.innerHTML = subtitleHtml;
+        } else {
+          textNode.textContent = subtitleText;
+        }
+        subtitleNode.appendChild(textNode);
+        subtitleNode.style.display = "";
+      } else {
+        subtitleNode.textContent = "";
+        subtitleNode.style.display = "none";
+      }
     }
     const cardNode = root.querySelector(".pzr-pro-card");
     if (cardNode) {
       cardNode.style.setProperty("--pzr-pro-title-font-size", String(options.titleFontSize || "clamp(26px,3.4vw,38px)"));
+      cardNode.style.setProperty("--pzr-pro-title-image-height", String(options.titleImageHeight || "56px"));
+      cardNode.style.setProperty("--pzr-pro-title-image-max-width", String(options.titleImageMaxWidth || "260px"));
+      cardNode.style.setProperty("--pzr-pro-subtitle-spacing", String(options.subtitleSpacing || "6px"));
+      cardNode.style.setProperty("--pzr-pro-subtitle-text-color", String(options.subtitleTextColor || "#c0f333"));
+      cardNode.style.setProperty("--pzr-pro-subtitle-text-font-size", String(options.subtitleTextFontSize || "clamp(14px,2.2vw,18px)"));
+      cardNode.style.setProperty("--pzr-pro-subtitle-text-font-weight", String(options.subtitleTextFontWeight || "600"));
+      cardNode.style.setProperty("--pzr-pro-subtitle-text-line-height", String(options.subtitleTextLineHeight || "1.3"));
+      cardNode.style.setProperty("--pzr-pro-subtitle-text-max-width", String(options.subtitleTextMaxWidth || "min(420px,90%)"));
       cardNode.style.setProperty("--pzr-pro-time-label-font-size", String(options.timeLabelFontSize || "clamp(18px,2.4vw,28px)"));
       cardNode.style.setProperty("--pzr-pro-time-label-top-spacing", String(options.timeLabelTopSpacing || "8px"));
       cardNode.style.setProperty("--pzr-pro-time-chip-font-size", String(options.timeChipFontSize || "clamp(20px,2.6vw,34px)"));
@@ -1342,38 +1399,41 @@ function setupParazarInstantUserForm(config) {
     tokenParam: "token",
     token: "",
     missingTokenRedirectUrl: "https://getapp.parazar.co/p",
-    title: "Lancer mon Parazar",
+    title: "Parazar Instantané",
     showTitle: true,
     titleImageUrl: "https://cdn.prod.website-files.com/6665627cae20cb25d5ffa6af/698cb46b188c3fb591e3ffa1_Parazar_Logo_PureWhite_RVB.svg",
     titleImageAlt: "Parazar",
-    titleImageHeight: "",
-    titleImageMaxWidth: "",
+    titleImageHeight: "56px",
+    titleImageMaxWidth: "260px",
     subtitleImageUrl: "",
     subtitleImageAlt: "",
     subtitleImageHeight: "",
     subtitleImageMaxWidth: "",
-    subtitleSpacing: "8px",
+    subtitleSpacing: "6px",
     subtitleText: "",
-    subtitleHtml: "",
+    subtitleHtml:
+      "<span style='font-size:clamp(28px,3.2vw,38px);font-weight:700;color:#ffffff'>Ce soir, tu sors.</span>" +
+      "<br><br>" +
+      "<span style='font-size:clamp(14px,1.8vw,18px);font-weight:600;color:#c0f333'>On te prépare une soirée avec 5‑7 personnes dans ta vibe.</span>",
     subtitleTextColor: "#c0f333",
     subtitleTextFontSize: "clamp(14px,2.2vw,18px)",
     subtitleTextFontWeight: "600",
     subtitleTextLineHeight: "1.3",
     subtitleTextMaxWidth: "min(420px,90%)",
     closedMessageHtml: "<p class=\"pzr-user-subtitle-text\">Fini pour aujourd'hui</p>",
-    titleFontSize: "clamp(26px,3.4vw,38px)",
-    titleFontSizeTablet: "",
-    titleFontSizeMobile: "",
-    labelFontSize: "",
-    labelFontSizeTablet: "",
-    labelFontSizeMobile: "",
-    labelTopSpacing: "8px",
-    chipFontSize: "clamp(20px,2.6vw,34px)",
-    chipFontSizeTablet: "",
-    chipFontSizeMobile: "",
+    titleFontSize: "clamp(26px,3vw,34px)",
+    titleFontSizeTablet: "clamp(24px,3.4vw,30px)",
+    titleFontSizeMobile: "clamp(22px,5vw,28px)",
+    labelFontSize: "clamp(20px,2.3vw,26px)",
+    labelFontSizeTablet: "clamp(18px,3vw,24px)",
+    labelFontSizeMobile: "clamp(20px,5vw,24px)",
+    labelTopSpacing: "10px",
+    chipFontSize: "clamp(14px,1.6vw,18px)",
+    chipFontSizeTablet: "clamp(14px,2.4vw,18px)",
+    chipFontSizeMobile: "clamp(14px,3.6vw,18px)",
     chipColumns: 3,
     chipColumnsMobile: 3,
-    chipGap: "10px",
+    chipGap: "6px",
     chipGapMobile: "8px",
     chipMaxWidth: "126px",
     chipMaxWidthMobile: "none",
@@ -1382,9 +1442,9 @@ function setupParazarInstantUserForm(config) {
     chipWideSpan: 2,
     chipWideMaxWidth: "260px",
     chipWideMaxWidthMobile: "none",
-    submitFontSize: "",
-    submitFontSizeTablet: "",
-    submitFontSizeMobile: "",
+    submitFontSize: "clamp(18px,2vw,22px)",
+    submitFontSizeTablet: "clamp(18px,3vw,22px)",
+    submitFontSizeMobile: "clamp(18px,4.4vw,22px)",
     labelFontScale: 0.85,
     submitFontScale: 0.9,
     wrapMinHeight: "100vh",
@@ -1394,30 +1454,30 @@ function setupParazarInstantUserForm(config) {
     wrapAlign: "center",
     wrapJustify: "center",
     lockHorizontalScroll: true,
-    whenLabel: "Quand ?",
-    withWhoLabel: "Avec qui ?",
-    whereLabel: "Où-tu te situes actuellement ?",
+    whenLabel: "Quand?",
+    withWhoLabel: "Avec qui?",
+    whereLabel: "Où es-tu actuellement?",
     nowLabel: "Maintenant",
     defaultWhenValue: "",
     defaultWithWhoValue: "",
     defaultWhereValue: "",
-    wherePlaceholder: "Sélectionne ta zone",
+    wherePlaceholder: "Choisir",
     whereWideMatch: "banlieue",
     withWhoOptions: ["Solo", "Une pote 💃", "Un pote 🕺"],
     whereOptions: [
-      "Paris - Ouest",
-      "Paris - Est",
-      "Paris - Nord",
-      "Paris - Sud",
-      "Paris - Centre",
-      "Banlieue Parisienne (77, 78, 91, 92, 93, 94, 95)"
+      "Paris\nCentre",
+      "Paris\nEst",
+      "Paris\nOuest",
+      "Paris\nNord",
+      "Paris\nSud",
+      "Banlieue Parisienne\n(77, 78, 91, 92, 93, 94, 95)"
     ],
-    successRedirectUrl: "",
+    successRedirectUrl: "https://parazar-suivez-vos-envies.webflow.io/instant/confirmation",
     submitLabel: "Lancer mon Parazar",
-    minHour: "18:00",
-    maxHour: "23:55",
+    minHour: "15:00",
+    maxHour: "21:30",
     intervalMinutes: 15,
-    startOffsetIntervals: 0,
+    startOffsetIntervals: 1,
     onSubmitSuccess: null,
     onSubmitError: null
   }, config || {});

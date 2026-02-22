@@ -778,6 +778,7 @@ function setupParazarProReservationForm(config) {
     startOffsetIntervals: 0,
     preselectFirstHour: false,
     locale: "fr-FR",
+    lockHorizontalScroll: true,
     onSubmitSuccess: null,
     onSubmitError: null
   }, config || {});
@@ -916,7 +917,7 @@ function setupParazarProReservationForm(config) {
     style.id = STYLE_ID;
     style.textContent = [
       "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
-      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
+      ".pzr-pro-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:#000;color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;width:100%;overflow-x:hidden}",
       ".pzr-pro-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-pro-title-font-size:clamp(26px,3.4vw,38px);--pzr-pro-time-label-font-size:clamp(18px,2.4vw,28px);--pzr-pro-time-label-top-spacing:8px;--pzr-pro-time-chip-font-size:clamp(20px,2.6vw,34px);--pzr-pro-counter-font-size:clamp(19px,3.2vw,29px);--pzr-pro-counter-font-weight:520;--pzr-pro-step-size:clamp(44px,7vw,56px);--pzr-pro-step-font-size:clamp(36px,5.5vw,46px);--pzr-pro-step-font-weight:500}",
       ".pzr-pro-card::after{display:none}",
       ".pzr-pro-title{margin:0 0 8px 0;font-size:var(--pzr-pro-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
@@ -958,6 +959,33 @@ function setupParazarProReservationForm(config) {
       throw new Error("setupParazarProReservationForm: conteneur introuvable");
     }
     return target;
+  }
+
+  function applyHorizontalScrollLock() {
+    if (!options.lockHorizontalScroll) {
+      return;
+    }
+    const htmlEl = document.documentElement;
+    if (htmlEl && !htmlEl.dataset.pzrProOverflowX) {
+      htmlEl.dataset.pzrProOverflowX = htmlEl.style.overflowX || "";
+      htmlEl.style.overflowX = "hidden";
+    }
+    if (document.body && !document.body.dataset.pzrProOverflowX) {
+      document.body.dataset.pzrProOverflowX = document.body.style.overflowX || "";
+      document.body.style.overflowX = "hidden";
+    }
+  }
+
+  function releaseHorizontalScrollLock() {
+    const htmlEl = document.documentElement;
+    if (htmlEl && htmlEl.dataset.pzrProOverflowX != null) {
+      htmlEl.style.overflowX = htmlEl.dataset.pzrProOverflowX;
+      delete htmlEl.dataset.pzrProOverflowX;
+    }
+    if (document.body && document.body.dataset.pzrProOverflowX != null) {
+      document.body.style.overflowX = document.body.dataset.pzrProOverflowX;
+      delete document.body.dataset.pzrProOverflowX;
+    }
   }
 
   function createUi(mountNode) {
@@ -1262,6 +1290,7 @@ function setupParazarProReservationForm(config) {
   }
 
   ensureStyles();
+  applyHorizontalScrollLock();
   const mountNode = getMountNode();
   const ui = createUi(mountNode);
 
@@ -1299,6 +1328,7 @@ function setupParazarProReservationForm(config) {
       if (ui && ui.root) {
         ui.root.remove();
       }
+      releaseHorizontalScrollLock();
     },
     getState: function () {
       const selectedHours = getSelectedHours(ui);

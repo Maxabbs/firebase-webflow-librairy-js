@@ -1388,7 +1388,11 @@ function setupParazarInstantUserForm(config) {
     token: "",
     missingTokenRedirectUrl: "https://getapp.parazar.co/p",
     title: "Lancer mon Parazar",
-    showTitle: false,
+    showTitle: true,
+    titleImageUrl: "https://cdn.prod.website-files.com/6665627cae20cb25d5ffa6af/698cb46b188c3fb591e3ffa1_Parazar_Logo_PureWhite_RVB.svg",
+    titleImageAlt: "Parazar",
+    titleImageHeight: "",
+    titleImageMaxWidth: "",
     titleFontSize: "clamp(26px,3.4vw,38px)",
     labelFontSize: "",
     labelTopSpacing: "8px",
@@ -1560,6 +1564,7 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-wrap{min-height:var(--pzr-user-wrap-min-height,100vh);display:flex;align-items:var(--pzr-user-wrap-align,center);justify-content:var(--pzr-user-wrap-justify,center);padding:var(--pzr-user-wrap-padding,24px);background:var(--pzr-user-wrap-bg,#000);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif}",
       ".pzr-user-card{position:relative;width:min(520px,95vw);border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);box-shadow:none;padding:22px;--pzr-user-title-font-size:clamp(26px,3.4vw,38px);--pzr-user-label-font-size:clamp(18px,2.4vw,28px);--pzr-user-label-top-spacing:8px;--pzr-user-chip-font-size:clamp(20px,2.6vw,34px);--pzr-user-submit-font-size:clamp(19px,3vw,28px)}",
       ".pzr-user-title{margin:0 0 16px 0;font-size:var(--pzr-user-title-font-size);line-height:1.08;font-weight:420;letter-spacing:-0.01em;color:#f3f3f3;text-align:center}",
+      ".pzr-user-title img{display:block;height:var(--pzr-user-title-image-height,32px);width:auto;max-width:var(--pzr-user-title-image-max-width,min(240px,70vw));margin:0 auto}",
       ".pzr-user-block{border-radius:16px;border:0.5px solid rgba(255,255,255,.14);background:linear-gradient(180deg,rgba(255,255,255,.02),rgba(255,255,255,.01));padding:14px}",
       ".pzr-user-section{margin-bottom:14px}",
       ".pzr-user-section:last-of-type{margin-bottom:18px}",
@@ -1652,9 +1657,18 @@ function setupParazarInstantUserForm(config) {
     const titleNode = root.querySelector(".pzr-user-title");
     if (titleNode) {
       const titleText = String(options.title || "").trim();
-      const shouldShowTitle = options.showTitle !== false && titleText;
+      const imageUrl = String(options.titleImageUrl || "").trim();
+      const shouldShowTitle = options.showTitle !== false && (titleText || imageUrl);
       if (!shouldShowTitle) {
         titleNode.remove();
+      } else if (imageUrl) {
+        titleNode.textContent = "";
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.alt = String(options.titleImageAlt || titleText || "Parazar");
+        img.loading = "lazy";
+        img.decoding = "async";
+        titleNode.appendChild(img);
       } else {
         titleNode.textContent = titleText;
       }
@@ -1680,10 +1694,18 @@ function setupParazarInstantUserForm(config) {
       const resolvedSubmitFont = options.submitFontSize
         ? String(options.submitFontSize)
         : "calc(var(--pzr-user-chip-font-size) * " + resolvedSubmitScale + ")";
+      const resolvedTitleImageHeight = options.titleImageHeight
+        ? String(options.titleImageHeight)
+        : String(options.titleFontSize || "clamp(26px,3.4vw,38px)");
+      const resolvedTitleImageMaxWidth = options.titleImageMaxWidth
+        ? String(options.titleImageMaxWidth)
+        : "min(240px,70vw)";
       cardNode.style.setProperty("--pzr-user-title-font-size", String(options.titleFontSize || "clamp(26px,3.4vw,38px)"));
       cardNode.style.setProperty("--pzr-user-label-font-size", resolvedLabelFont);
       cardNode.style.setProperty("--pzr-user-label-top-spacing", String(options.labelTopSpacing || "8px"));
       cardNode.style.setProperty("--pzr-user-chip-font-size", String(options.chipFontSize || "clamp(20px,2.6vw,34px)"));
+      cardNode.style.setProperty("--pzr-user-title-image-height", resolvedTitleImageHeight);
+      cardNode.style.setProperty("--pzr-user-title-image-max-width", resolvedTitleImageMaxWidth);
       cardNode.style.setProperty("--pzr-user-chip-columns", String(options.chipColumns || 3));
       cardNode.style.setProperty("--pzr-user-chip-columns-mobile", String(options.chipColumnsMobile || options.chipColumns || 3));
       cardNode.style.setProperty("--pzr-user-chip-gap", String(options.chipGap || "10px"));

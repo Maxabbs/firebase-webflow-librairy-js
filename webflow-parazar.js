@@ -1362,9 +1362,15 @@ function setupParazarInstantUserForm(config) {
     subtitleTextMaxWidth: "min(420px,90%)",
     closedMessageHtml: "<p class=\"pzr-user-subtitle-text\">Fini pour aujourd'hui</p>",
     titleFontSize: "clamp(26px,3.4vw,38px)",
+    titleFontSizeTablet: "",
+    titleFontSizeMobile: "",
     labelFontSize: "",
+    labelFontSizeTablet: "",
+    labelFontSizeMobile: "",
     labelTopSpacing: "8px",
     chipFontSize: "clamp(20px,2.6vw,34px)",
+    chipFontSizeTablet: "",
+    chipFontSizeMobile: "",
     chipColumns: 3,
     chipColumnsMobile: 3,
     chipGap: "10px",
@@ -1377,6 +1383,8 @@ function setupParazarInstantUserForm(config) {
     chipWideMaxWidth: "260px",
     chipWideMaxWidthMobile: "none",
     submitFontSize: "",
+    submitFontSizeTablet: "",
+    submitFontSizeMobile: "",
     labelFontScale: 0.85,
     submitFontScale: 0.9,
     wrapMinHeight: "100vh",
@@ -1562,7 +1570,8 @@ function setupParazarInstantUserForm(config) {
       ".pzr-user-status{min-height:22px;margin:12px 2px 0;font-size:14px;color:#bbb}",
       ".pzr-user-status.success{color:#c0f333}",
       ".pzr-user-status.error{color:#ff8f8f}",
-      "@media (max-width:480px){.pzr-user-wrap{padding:var(--pzr-user-wrap-padding-mobile,14px)}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-chips{grid-template-columns:repeat(var(--pzr-user-chip-columns-mobile,var(--pzr-user-chip-columns,3)),minmax(0,1fr));gap:var(--pzr-user-chip-gap-mobile,var(--pzr-user-chip-gap,10px))}.pzr-user-chip{max-width:var(--pzr-user-chip-max-width-mobile,none);height:var(--pzr-user-chip-height-mobile,50px)}.pzr-user-chip.is-wide{max-width:var(--pzr-user-chip-wide-max-width-mobile,var(--pzr-user-chip-wide-max-width,260px))}.pzr-user-submit{height:58px;font-size:24px}}"
+      "@media (max-width:991px){.pzr-user-title{font-size:var(--pzr-user-title-font-size-tablet,var(--pzr-user-title-font-size))}.pzr-user-label{font-size:var(--pzr-user-label-font-size-tablet,var(--pzr-user-label-font-size))}.pzr-user-chip{font-size:var(--pzr-user-chip-font-size-tablet,var(--pzr-user-chip-font-size))}.pzr-user-submit{font-size:var(--pzr-user-submit-font-size-tablet,var(--pzr-user-submit-font-size))}}",
+      "@media (max-width:480px){.pzr-user-wrap{padding:var(--pzr-user-wrap-padding-mobile,14px)}.pzr-user-card{padding:16px;border-radius:16px}.pzr-user-title{font-size:var(--pzr-user-title-font-size-mobile,var(--pzr-user-title-font-size-tablet,var(--pzr-user-title-font-size)))}.pzr-user-label{font-size:var(--pzr-user-label-font-size-mobile,var(--pzr-user-label-font-size-tablet,var(--pzr-user-label-font-size)))}.pzr-user-chip{font-size:var(--pzr-user-chip-font-size-mobile,var(--pzr-user-chip-font-size-tablet,var(--pzr-user-chip-font-size)))}.pzr-user-chips{grid-template-columns:repeat(var(--pzr-user-chip-columns-mobile,var(--pzr-user-chip-columns,3)),minmax(0,1fr));gap:var(--pzr-user-chip-gap-mobile,var(--pzr-user-chip-gap,10px))}.pzr-user-chip{max-width:var(--pzr-user-chip-max-width-mobile,none);height:var(--pzr-user-chip-height-mobile,50px)}.pzr-user-chip.is-wide{max-width:var(--pzr-user-chip-wide-max-width-mobile,var(--pzr-user-chip-wide-max-width,260px))}.pzr-user-submit{height:58px;font-size:var(--pzr-user-submit-font-size-mobile,var(--pzr-user-submit-font-size-tablet,var(--pzr-user-submit-font-size)))}}"
     ].join("");
     document.head.appendChild(style);
   }
@@ -1728,6 +1737,38 @@ function setupParazarInstantUserForm(config) {
       const resolvedSubmitFont = options.submitFontSize
         ? String(options.submitFontSize)
         : "calc(var(--pzr-user-chip-font-size) * " + resolvedSubmitScale + ")";
+      const resolvedTitleFontTablet = options.titleFontSizeTablet
+        ? String(options.titleFontSizeTablet)
+        : "";
+      const resolvedTitleFontMobile = options.titleFontSizeMobile
+        ? String(options.titleFontSizeMobile)
+        : "";
+      const resolvedChipFontTablet = options.chipFontSizeTablet
+        ? String(options.chipFontSizeTablet)
+        : "";
+      const resolvedChipFontMobile = options.chipFontSizeMobile
+        ? String(options.chipFontSizeMobile)
+        : "";
+      const resolvedLabelFontTablet = options.labelFontSizeTablet
+        ? String(options.labelFontSizeTablet)
+        : (!options.labelFontSize
+          ? "calc(var(--pzr-user-chip-font-size-tablet, var(--pzr-user-chip-font-size)) * " + resolvedLabelScale + ")"
+          : "");
+      const resolvedLabelFontMobile = options.labelFontSizeMobile
+        ? String(options.labelFontSizeMobile)
+        : (!options.labelFontSize
+          ? "calc(var(--pzr-user-chip-font-size-mobile, var(--pzr-user-chip-font-size)) * " + resolvedLabelScale + ")"
+          : "");
+      const resolvedSubmitFontTablet = options.submitFontSizeTablet
+        ? String(options.submitFontSizeTablet)
+        : (!options.submitFontSize
+          ? "calc(var(--pzr-user-chip-font-size-tablet, var(--pzr-user-chip-font-size)) * " + resolvedSubmitScale + ")"
+          : "");
+      const resolvedSubmitFontMobile = options.submitFontSizeMobile
+        ? String(options.submitFontSizeMobile)
+        : (!options.submitFontSize
+          ? "calc(var(--pzr-user-chip-font-size-mobile, var(--pzr-user-chip-font-size)) * " + resolvedSubmitScale + ")"
+          : "");
       const resolvedTitleImageHeight = options.titleImageHeight
         ? String(options.titleImageHeight)
         : String(options.titleFontSize || "clamp(26px,3.4vw,38px)");
@@ -1762,6 +1803,24 @@ function setupParazarInstantUserForm(config) {
       cardNode.style.setProperty("--pzr-user-label-font-size", resolvedLabelFont);
       cardNode.style.setProperty("--pzr-user-label-top-spacing", String(options.labelTopSpacing || "8px"));
       cardNode.style.setProperty("--pzr-user-chip-font-size", String(options.chipFontSize || "clamp(20px,2.6vw,34px)"));
+      if (resolvedTitleFontTablet) {
+        cardNode.style.setProperty("--pzr-user-title-font-size-tablet", resolvedTitleFontTablet);
+      }
+      if (resolvedTitleFontMobile) {
+        cardNode.style.setProperty("--pzr-user-title-font-size-mobile", resolvedTitleFontMobile);
+      }
+      if (resolvedChipFontTablet) {
+        cardNode.style.setProperty("--pzr-user-chip-font-size-tablet", resolvedChipFontTablet);
+      }
+      if (resolvedChipFontMobile) {
+        cardNode.style.setProperty("--pzr-user-chip-font-size-mobile", resolvedChipFontMobile);
+      }
+      if (resolvedLabelFontTablet) {
+        cardNode.style.setProperty("--pzr-user-label-font-size-tablet", resolvedLabelFontTablet);
+      }
+      if (resolvedLabelFontMobile) {
+        cardNode.style.setProperty("--pzr-user-label-font-size-mobile", resolvedLabelFontMobile);
+      }
       cardNode.style.setProperty("--pzr-user-title-image-height", resolvedTitleImageHeight);
       cardNode.style.setProperty("--pzr-user-title-image-max-width", resolvedTitleImageMaxWidth);
       cardNode.style.setProperty("--pzr-user-subtitle-image-height", resolvedSubtitleImageHeight);
@@ -1784,6 +1843,12 @@ function setupParazarInstantUserForm(config) {
       cardNode.style.setProperty("--pzr-user-chip-wide-max-width", String(options.chipWideMaxWidth || "260px"));
       cardNode.style.setProperty("--pzr-user-chip-wide-max-width-mobile", String(options.chipWideMaxWidthMobile || "none"));
       cardNode.style.setProperty("--pzr-user-submit-font-size", resolvedSubmitFont);
+      if (resolvedSubmitFontTablet) {
+        cardNode.style.setProperty("--pzr-user-submit-font-size-tablet", resolvedSubmitFontTablet);
+      }
+      if (resolvedSubmitFontMobile) {
+        cardNode.style.setProperty("--pzr-user-submit-font-size-mobile", resolvedSubmitFontMobile);
+      }
     }
 
     const whenLabel = document.getElementById("pzr-user-when-label");

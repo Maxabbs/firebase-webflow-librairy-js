@@ -1364,7 +1364,7 @@ function setupParazarInstantUserTokenGuard(config) {
     apiBase: "https://backend.parazar.co",
     tokenParam: "token",
     token: "",
-    tokenCheckPath: "/api/parazar_instant/webflow/token_checking/",
+    tokenCheckPath: "/api/parazar_instant/webflow/submission_token_checking/",
     tokenCheckUrl: "",
     missingTokenRedirectUrl: "https://getapp.parazar.co/p"
   }, config || {});
@@ -2527,7 +2527,6 @@ if (typeof window !== "undefined") {
   window.setupParazarSecurePayment = setupParazarSecurePayment;
   window.setupParazarProReservationForm = setupParazarProReservationForm;
   window.setupParazarInstantUserTokenGuard = setupParazarInstantUserTokenGuard;
-  window.setupParazarInstantSubmissionTokenGuard = setupParazarInstantSubmissionTokenGuard;
   window.setupParazarInstantSecureTokenGuard = setupParazarInstantSecureTokenGuard;
   window.setupParazarInstantUserForm = setupParazarInstantUserForm;
 }

@@ -1360,6 +1360,7 @@ function setupParazarInstantUserForm(config) {
     subtitleTextFontWeight: "600",
     subtitleTextLineHeight: "1.3",
     subtitleTextMaxWidth: "min(420px,90%)",
+    closedMessageHtml: "<p class=\"pzr-user-subtitle-text\">Fini pour aujourd'hui</p>",
     titleFontSize: "clamp(26px,3.4vw,38px)",
     labelFontSize: "",
     labelTopSpacing: "8px",
@@ -1608,7 +1609,7 @@ function setupParazarInstantUserForm(config) {
       '  <div class="pzr-user-card">',
       '    <h2 class="pzr-user-title"></h2>',
       '    <div class="pzr-user-subtitle" id="pzr-user-subtitle"></div>',
-      '    <div class="pzr-user-block">',
+      '    <div class="pzr-user-block" id="pzr-user-block">',
       '      <div class="pzr-user-section">',
       '        <div class="pzr-user-label" id="pzr-user-when-label"></div>',
       '        <div id="pzr-user-when-chips" class="pzr-user-chips" role="listbox" aria-label="Quand"></div>',
@@ -1663,6 +1664,7 @@ function setupParazarInstantUserForm(config) {
           textNode.textContent = subtitleText;
         }
         subtitleNode.appendChild(textNode);
+        subtitleNode.style.display = "";
       } else if (subtitleImageUrl) {
         subtitleNode.textContent = "";
         const img = document.createElement("img");
@@ -1671,8 +1673,10 @@ function setupParazarInstantUserForm(config) {
         img.loading = "lazy";
         img.decoding = "async";
         subtitleNode.appendChild(img);
+        subtitleNode.style.display = "";
       } else {
-        subtitleNode.remove();
+        subtitleNode.textContent = "";
+        subtitleNode.style.display = "none";
       }
     }
     const wrapNode = root.querySelector(".pzr-user-wrap");
@@ -1773,7 +1777,8 @@ function setupParazarInstantUserForm(config) {
       whoChips: document.getElementById("pzr-user-who-chips"),
       whereChips: document.getElementById("pzr-user-where-chips"),
       submitButton: document.getElementById("pzr-user-submit"),
-      statusNode: document.getElementById("pzr-user-status")
+      statusNode: document.getElementById("pzr-user-status"),
+      blockNode: document.getElementById("pzr-user-block")
     };
   }
 
@@ -1983,6 +1988,27 @@ function setupParazarInstantUserForm(config) {
     });
   }
 
+  function isOutsideBookingWindow() {
+    const now = new Date();
+    const bookingWindow = resolveBookingWindow(now);
+    return now.getTime() < bookingWindow.start.getTime() || now.getTime() > bookingWindow.end.getTime();
+  }
+
+  function showClosedMessage(uiRef) {
+    if (!uiRef) {
+      return;
+    }
+    if (uiRef.blockNode) {
+      uiRef.blockNode.style.display = "none";
+    }
+    const subtitleNode = document.getElementById("pzr-user-subtitle");
+    if (subtitleNode) {
+      const html = String(options.closedMessageHtml || "").trim() || "<p class=\"pzr-user-subtitle-text\">Fini pour aujourd'hui</p>";
+      subtitleNode.innerHTML = html;
+      subtitleNode.style.display = "";
+    }
+  }
+
   function getState() {
     if (!ui) {
       return null;
@@ -2080,6 +2106,19 @@ function setupParazarInstantUserForm(config) {
 
   ui = createUi(root);
   ui.submitButton.textContent = options.submitLabel;
+
+  if (isOutsideBookingWindow()) {
+    showClosedMessage(ui);
+    return {
+      destroy: function () {
+        if (ui && ui.root) {
+          ui.root.remove();
+        }
+      },
+      getState: getState,
+      ready: Promise.resolve(false)
+    };
+  }
 
   buildWhenChips(ui);
   buildWhoChips(ui);

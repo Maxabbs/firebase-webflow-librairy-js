@@ -1866,12 +1866,14 @@ function setupParazarInstantUserForm(config) {
     buildChips(ui.whenChips, items, options.defaultWhenValue, function () {
       updateSubmitButtonAvailability(ui);
     });
+    scheduleChipLayout(ui);
   }
 
   function buildWhoChips(ui) {
     buildChips(ui.whoChips, options.withWhoOptions, options.defaultWithWhoValue, function () {
       updateSubmitButtonAvailability(ui);
     });
+    scheduleChipLayout(ui);
   }
 
   function buildWhereOptions(ui) {
@@ -1913,6 +1915,60 @@ function setupParazarInstantUserForm(config) {
   let isSubmitting = false;
   let currentToken = null;
   let ui = null;
+
+  function resolveChipColumnsForViewport() {
+    const baseColumns = Number(options.chipColumns) || 3;
+    const mobileColumns = Number(options.chipColumnsMobile) || baseColumns;
+    if (window.matchMedia && window.matchMedia("(max-width:480px)").matches) {
+      return mobileColumns;
+    }
+    return baseColumns;
+  }
+
+  function applyChipLayout(container) {
+    if (!container) {
+      return;
+    }
+    const chips = Array.from(container.querySelectorAll(".pzr-user-chip"));
+    if (!chips.length) {
+      return;
+    }
+
+    const maxColumns = resolveChipColumnsForViewport();
+    const columnGapValue = getComputedStyle(container).columnGap || getComputedStyle(container).gap || "0px";
+    const gap = Number.parseFloat(columnGapValue) || 0;
+    let maxChipWidth = 0;
+
+    chips.forEach(function (chip) {
+      const rect = chip.getBoundingClientRect();
+      if (rect.width > maxChipWidth) {
+        maxChipWidth = rect.width;
+      }
+    });
+
+    if (chips.length < maxColumns && maxChipWidth > 0) {
+      const totalWidth = maxChipWidth * chips.length + gap * (chips.length - 1);
+      container.style.maxWidth = totalWidth + "px";
+      container.style.marginLeft = "auto";
+      container.style.marginRight = "auto";
+      container.style.gridTemplateColumns = "repeat(" + chips.length + ", " + maxChipWidth + "px)";
+    } else {
+      container.style.maxWidth = "";
+      container.style.marginLeft = "";
+      container.style.marginRight = "";
+      container.style.gridTemplateColumns = "";
+    }
+  }
+
+  function scheduleChipLayout(uiRef) {
+    if (!uiRef) {
+      return;
+    }
+    window.requestAnimationFrame(function () {
+      applyChipLayout(uiRef.whenChips);
+      applyChipLayout(uiRef.whoChips);
+    });
+  }
 
   function getState() {
     if (!ui) {
@@ -2023,6 +2079,9 @@ function setupParazarInstantUserForm(config) {
 
   ui.submitButton.addEventListener("click", function () {
     submitInstant(ui);
+  });
+  window.addEventListener("resize", function () {
+    scheduleChipLayout(ui);
   });
 
   const readyPromise = Promise.resolve(true);

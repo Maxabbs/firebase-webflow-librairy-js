@@ -233,7 +233,7 @@ function setupParazarSecureSetupIntent(config) {
     apiBase: "https://backend.parazar.co",
     confirmButtonLabel: "Confirmer ma place",
     preauthorizationLabel: "100% gratuit - Aucun débit si tu viens",
-    walletMerchantName: "Parazar - Zéro débit si tu viens",
+    walletMerchantName: "Parazar",
     openButtonLoadingLabel: "Chargement...",
     redirectMode: "if_required",
     returnUrl: window.location.href,

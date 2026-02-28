@@ -223,7 +223,11 @@ function setupParazarSecureSetupIntent(config) {
       confirmButtonLabel: "Activer mon établissement",
       preauthorizationLabel: "",
       walletMerchantName: "Parazar",
-      successRedirectUrl: "pro/confirm"
+      successRedirectUrl: "pro/confirm",
+      paymentElementOptions: {
+        // RIB (SEPA) uniquement pour les pros (on garde aussi Apple Pay / Google Pay / Carte)
+        paymentMethodOrder: ["sepa_debit", "apple_pay", "google_pay", "card"]
+      }
     }
   };
 
@@ -286,7 +290,9 @@ function setupParazarSecureSetupIntent(config) {
     confirmButtonLabel: options.confirmButtonLabel,
     preauthorizationLabel: options.preauthorizationLabel,
     walletMerchantName: options.walletMerchantName,
-    successRedirectUrl: options.successRedirectUrl
+    successRedirectUrl: options.successRedirectUrl,
+    paymentElementOptions: options.paymentElementOptions,
+    elementAppearance: options.elementAppearance
   };
 
   function showError(message) {
@@ -316,7 +322,9 @@ function setupParazarSecureSetupIntent(config) {
         confirmButtonLabel: options.confirmButtonLabel,
         preauthorizationLabel: options.preauthorizationLabel,
         walletMerchantName: options.walletMerchantName,
-        successRedirectUrl: options.successRedirectUrl
+        successRedirectUrl: options.successRedirectUrl,
+        paymentElementOptions: options.paymentElementOptions,
+        elementAppearance: options.elementAppearance
       },
       typeOverrides || {}
     );
@@ -537,8 +545,8 @@ function setupParazarSecureSetupIntent(config) {
       ui.paymentElementContainer.innerHTML = "";
     }
 
-    const userAppearance = options.elementAppearance && typeof options.elementAppearance === "object"
-      ? options.elementAppearance
+    const userAppearance = runtimePaymentUi.elementAppearance && typeof runtimePaymentUi.elementAppearance === "object"
+      ? runtimePaymentUi.elementAppearance
       : {};
     const defaultAppearance = {
       theme: "night",
@@ -590,8 +598,8 @@ function setupParazarSecureSetupIntent(config) {
         rules: Object.assign({}, defaultAppearance.rules, userAppearance.rules || {})
       })
     });
-    const userPaymentOptions = options.paymentElementOptions && typeof options.paymentElementOptions === "object"
-      ? options.paymentElementOptions
+    const userPaymentOptions = runtimePaymentUi.paymentElementOptions && typeof runtimePaymentUi.paymentElementOptions === "object"
+      ? runtimePaymentUi.paymentElementOptions
       : {};
     const paymentOptions = Object.assign(
       {},

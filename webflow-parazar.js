@@ -375,7 +375,7 @@ function setupParazarSecureSetupIntent(config) {
   }
 
   function resolveSuccessRedirectUrl() {
-    const fallbackUrl = "https://parazar.co";
+    const fallbackUrl = "https://www.parazar.co";
     const target = runtimePaymentUi.successRedirectUrl || fallbackUrl;
 
     try {
@@ -1735,7 +1735,7 @@ function setupParazarInstantUserForm(config) {
       "Paris\nSud",
       "Banlieue Parisienne\n(77, 78, 91, 92, 93, 94, 95)"
     ],
-    successRedirectUrl: "https://parazar.co/instant/confirmation",
+    successRedirectUrl: "https://www.parazar.co/instant/confirmation",
     submitLabel: "Lancer mon Parazar",
     minHour: "18:00",
     maxHour: "21:00",

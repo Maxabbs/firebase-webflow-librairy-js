@@ -2264,10 +2264,9 @@ function setupParazarInstantUserForm(config) {
   function buildWhenChips(ui) {
     const now = new Date();
     const bookingWindow = resolveBookingWindow(now);
-    const earliestWithOffset = new Date(
-      now.getTime() + (startOffsetIntervalsValue * intervalMinutesValue * 60000)
-    );
-    const baseStart = new Date(Math.max(bookingWindow.start.getTime(), earliestWithOffset.getTime()));
+    const offsetMinutes = startOffsetIntervalsValue * intervalMinutesValue;
+    const earliestFromMin = new Date(bookingWindow.start.getTime() + (offsetMinutes * 60000));
+    const baseStart = new Date(Math.max(earliestFromMin.getTime(), now.getTime()));
     const startSlot = ceilDateToInterval(baseStart);
 
     const items = [{ label: options.nowLabel, value: options.nowLabel }];

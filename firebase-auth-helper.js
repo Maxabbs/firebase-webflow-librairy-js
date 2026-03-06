@@ -837,8 +837,7 @@ function setupParazarInstantRedirectWithFirebaseToken(buttonId, config) {
     authWaitMs: 4000,
     redirectIfNotLoggedIn: "",
     onSuccess: null,
-    onError: null,
-    buttonSelector: ""
+    onError: null
   }, config || {});
 
   function joinUrl(base, path) {
@@ -898,122 +897,59 @@ function setupParazarInstantRedirectWithFirebaseToken(buttonId, config) {
     }
   }
 
-  function onDomReady(callback) {
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", callback);
-    } else {
-      callback();
-    }
-  }
-
-  function escapeSelector(value) {
-    if (window.CSS && typeof CSS.escape === "function") {
-      return CSS.escape(value);
-    }
-    return String(value).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
-  }
-
-  function resolveButtons() {
-    const rawTargets = [];
-    if (Array.isArray(buttonId)) {
-      rawTargets.push.apply(rawTargets, buttonId);
-    } else if (buttonId != null) {
-      rawTargets.push(buttonId);
-    }
-    if (options.buttonSelector) {
-      rawTargets.push(options.buttonSelector);
-    }
-
-    const targets = rawTargets
-      .map(value => String(value || "").trim())
-      .filter(Boolean);
-
-    const buttons = [];
-    const seen = new Set();
-
-    targets.forEach((target) => {
-      const isSelector = /^[#.\[]/.test(target) || /[\s>+~,]/.test(target);
-      const selector = isSelector ? target : `#${escapeSelector(target)}`;
-      document.querySelectorAll(selector).forEach((node) => {
-        if (!seen.has(node)) {
-          seen.add(node);
-          buttons.push(node);
-        }
-      });
-    });
-
-    return buttons;
-  }
-
-  async function handleClick(e) {
-    e.preventDefault();
-
-    const user = await waitForAuthUser(options.authWaitMs);
-    if (!user) {
-      if (options.redirectIfNotLoggedIn) {
-        window.location.href = options.redirectIfNotLoggedIn;
-      }
-      return;
-    }
-
-    try {
-      const token = await user.getIdToken(options.forceRefreshToken !== false);
-      const response = await fetch(resolveApiUrl(), {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const payload = await response.json().catch(function () { return {}; });
-
-      if (response.status === 200) {
-        const targetUrl = payload && typeof payload.url === "string" ? payload.url.trim() : "";
-        if (!targetUrl) {
-          throw new Error("Réponse serveur invalide.");
-        }
-        if (typeof options.onSuccess === "function") {
-          options.onSuccess({ response: response, data: payload, targetUrl: targetUrl });
-        }
-        window.location.href = targetUrl;
-        return;
-      }
-
-      const errorMessage = payload && typeof payload.error === "string"
-        ? payload.error.trim()
-        : "";
-      throw new Error(errorMessage || "Impossible de rediriger.");
-    } catch (error) {
-      console.error("[setupParazarInstantRedirectWithFirebaseToken] Erreur:", error);
-      if (typeof options.onError === "function") {
-        options.onError(error);
-      }
-    }
-  }
-
-  function bindButton(button) {
-    if (!button) {
-      return;
-    }
-    if (button.dataset && button.dataset.parazarInstantRedirectBound === "1") {
-      return;
-    }
-    if (button.dataset) {
-      button.dataset.parazarInstantRedirectBound = "1";
-    }
-    button.addEventListener("click", handleClick);
-  }
-
-  onDomReady(function () {
+  document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
-      const buttons = resolveButtons();
+      const button = document.getElementById(buttonId);
 
-      if (buttons.length === 0) {
-        const targetLabel = options.buttonSelector || buttonId;
-        console.warn(`[setupParazarInstantRedirectWithFirebaseToken] Bouton avec l'id ou sélecteur "${targetLabel}" introuvable.`);
+      if (!button) {
+        console.warn(`[setupParazarInstantRedirectWithFirebaseToken] Bouton avec l'id "${buttonId}" introuvable.`);
         return;
       }
 
-      buttons.forEach(bindButton);
+      button.addEventListener("click", async (e) => {
+        e.preventDefault();
+
+        const user = await waitForAuthUser(options.authWaitMs);
+        if (!user) {
+          if (options.redirectIfNotLoggedIn) {
+            window.location.href = options.redirectIfNotLoggedIn;
+          }
+          return;
+        }
+
+        try {
+          const token = await user.getIdToken(options.forceRefreshToken !== false);
+          const response = await fetch(resolveApiUrl(), {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          });
+          const payload = await response.json().catch(function () { return {}; });
+
+          if (response.status === 200) {
+            const targetUrl = payload && typeof payload.url === "string" ? payload.url.trim() : "";
+            if (!targetUrl) {
+              throw new Error("Réponse serveur invalide.");
+            }
+            if (typeof options.onSuccess === "function") {
+              options.onSuccess({ response: response, data: payload, targetUrl: targetUrl });
+            }
+            window.location.href = targetUrl;
+            return;
+          }
+
+          const errorMessage = payload && typeof payload.error === "string"
+            ? payload.error.trim()
+            : "";
+          throw new Error(errorMessage || "Impossible de rediriger.");
+        } catch (error) {
+          console.error("[setupParazarInstantRedirectWithFirebaseToken] Erreur:", error);
+          if (typeof options.onError === "function") {
+            options.onError(error);
+          }
+        }
+      });
     });
   });
 }

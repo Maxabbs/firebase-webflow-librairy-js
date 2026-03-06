@@ -834,6 +834,7 @@ function setupParazarInstantRedirectWithFirebaseToken(buttonId, config) {
     apiUrl: "",
     path: "/api/parazar_instant/webflow",
     forceRefreshToken: true,
+    authWaitMs: 4000,
     redirectIfNotLoggedIn: "",
     onSuccess: null,
     onError: null
@@ -860,6 +861,42 @@ function setupParazarInstantRedirectWithFirebaseToken(buttonId, config) {
     return joinUrl(options.apiBase, String(options.path || "/api/parazar_instant/webflow"));
   }
 
+  function waitForAuthUser(timeoutMs) {
+    try {
+      const auth = firebase.auth();
+      if (auth.currentUser) {
+        return Promise.resolve(auth.currentUser);
+      }
+      return new Promise((resolve) => {
+        let settled = false;
+        let unsubscribe = null;
+        const finish = (user) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          if (typeof unsubscribe === "function") {
+            unsubscribe();
+          }
+          resolve(user || null);
+        };
+
+        unsubscribe = auth.onAuthStateChanged((user) => {
+          finish(user || null);
+        });
+
+        const waitMs = Number(timeoutMs);
+        if (Number.isFinite(waitMs) && waitMs > 0) {
+          window.setTimeout(() => {
+            finish(auth.currentUser || null);
+          }, waitMs);
+        }
+      });
+    } catch (_) {
+      return Promise.resolve(null);
+    }
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     waitForFirebase(() => {
       const button = document.getElementById(buttonId);
@@ -872,7 +909,7 @@ function setupParazarInstantRedirectWithFirebaseToken(buttonId, config) {
       button.addEventListener("click", async (e) => {
         e.preventDefault();
 
-        const user = firebase.auth().currentUser;
+        const user = await waitForAuthUser(options.authWaitMs);
         if (!user) {
           if (options.redirectIfNotLoggedIn) {
             window.location.href = options.redirectIfNotLoggedIn;

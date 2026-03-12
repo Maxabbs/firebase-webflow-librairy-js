@@ -2561,6 +2561,536 @@ function setupParazarInstantUserForm(config) {
   };
 }
 
+// Checkin time guard (no UI)
+function setupParazarCheckinWindowGuard(config) {
+  const options = Object.assign({
+    minHour: "18:00",
+    maxHour: "21:00",
+    outsideWindowRedirectUrl: "https://get.parazar.co"
+  }, config || {});
+
+  function toMinutes(hhmm) {
+    const parts = String(hhmm).split(":");
+    const h = Number(parts[0]);
+    const m = Number(parts[1]);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) {
+      return null;
+    }
+    if (h < 0 || h > 23 || m < 0 || m > 59) {
+      return null;
+    }
+    return h * 60 + m;
+  }
+
+  function buildDateAtMinutes(referenceDate, minutesOfDay, dayOffset) {
+    const date = new Date(referenceDate);
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() + dayOffset);
+    date.setMinutes(minutesOfDay, 0, 0);
+    return date;
+  }
+
+  const minHourMinutesValue = toMinutes(options.minHour);
+  const maxHourMinutesValue = toMinutes(options.maxHour);
+  const resolvedMinHourMinutes = Number.isFinite(minHourMinutesValue) ? minHourMinutesValue : toMinutes("18:00");
+  const resolvedMaxHourMinutes = Number.isFinite(maxHourMinutesValue) ? maxHourMinutesValue : toMinutes("21:00");
+
+  function resolveActiveWindow(now) {
+    const isOvernightWindow = resolvedMaxHourMinutes < resolvedMinHourMinutes;
+    if (!isOvernightWindow) {
+      return {
+        start: buildDateAtMinutes(now, resolvedMinHourMinutes, 0),
+        end: buildDateAtMinutes(now, resolvedMaxHourMinutes, 0)
+      };
+    }
+
+    const todayMax = buildDateAtMinutes(now, resolvedMaxHourMinutes, 0);
+    if (now.getTime() < todayMax.getTime()) {
+      return {
+        start: buildDateAtMinutes(now, resolvedMinHourMinutes, -1),
+        end: todayMax
+      };
+    }
+
+    return {
+      start: buildDateAtMinutes(now, resolvedMinHourMinutes, 0),
+      end: buildDateAtMinutes(now, resolvedMaxHourMinutes, 1)
+    };
+  }
+
+  const now = new Date();
+  const windowRange = resolveActiveWindow(now);
+  const isOutside = now.getTime() < windowRange.start.getTime() || now.getTime() > windowRange.end.getTime();
+
+  if (isOutside && options.outsideWindowRedirectUrl) {
+    window.location.replace(options.outsideWindowRedirectUrl);
+  }
+
+  return {
+    ok: !isOutside,
+    now: now,
+    window: windowRange
+  };
+}
+
+// Checkin form UI
+function setupParazarCheckinForm(config) {
+  const options = Object.assign({
+    mountSelector: "body",
+    apiBase: "https://backend.parazar.co",
+    apiUrl: "",
+    checkinPath: "/api/parazar/checkin/",
+    title: "Parazar",
+    showTitle: true,
+    titleImageUrl: "https://cdn.prod.website-files.com/6665627cae20cb25d5ffa6af/698cb46b188c3fb591e3ffa1_Parazar_Logo_PureWhite_RVB.svg",
+    titleImageAlt: "Parazar",
+    titleImageHeight: "56px",
+    titleImageMaxWidth: "260px",
+    subtitleText: "Renseigne ton checkin-id afin de valider ta présence",
+    subtitleHtml: "",
+    subtitleSpacing: "10px",
+    subtitleTextColor: "#c0f333",
+    subtitleTextFontSize: "clamp(14px,2.2vw,18px)",
+    subtitleTextFontWeight: "600",
+    subtitleTextLineHeight: "1.35",
+    subtitleTextMaxWidth: "min(420px,90%)",
+    inputPlaceholder: "Checkin-id",
+    inputAriaLabel: "Checkin-id",
+    inputHeight: "56px",
+    inputPadding: "0 16px",
+    inputRadius: "14px",
+    inputFontSize: "clamp(16px,2.4vw,20px)",
+    inputBackground: "#101010",
+    inputBorder: "0.5px solid rgba(255,255,255,.16)",
+    inputTextColor: "#ffffff",
+    inputTextAlign: "center",
+    buttonLabel: "Je valide ma présence",
+    buttonHeight: "60px",
+    buttonRadius: "13px",
+    buttonFontSize: "clamp(18px,2.6vw,22px)",
+    buttonBackground: "#c0f333",
+    buttonColor: "#0b0b0b",
+    buttonShadow: "0 10px 28px rgba(192,243,51,.26),inset 0 1px 0 rgba(255,255,255,.3)",
+    wrapMinHeight: "100vh",
+    wrapPadding: "24px",
+    wrapPaddingMobile: "14px",
+    wrapBackground: "#000",
+    wrapAlign: "center",
+    wrapJustify: "center",
+    lockHorizontalScroll: true,
+    statusMinHeight: "22px",
+    statusFontSize: "14px",
+    statusMutedColor: "#bfbfbf",
+    statusSuccessColor: "#c0f333",
+    statusErrorColor: "#ff8f8f",
+    successMessage: "Présence confirmée",
+    alreadyConfirmedMessage: "Présence déjà confirmé",
+    invalidMessage: "Checkin-id non valide ou expiré",
+    genericErrorMessage: "Impossible de valider la présence",
+    pendingMessage: "Validation en cours...",
+    successRedirectUrl: "https://getapp.parazar.co",
+    successRedirectDelayMs: 10000,
+    errorClearDelayMs: 10000,
+    successIcon: "→",
+    errorIcon: "✕",
+    successIconColor: "#49d37e",
+    errorIconColor: "#ff6b6b",
+    onSubmitSuccess: null,
+    onSubmitError: null
+  }, config || {});
+
+  const STYLE_ID = "pzr-checkin-style";
+  const ROOT_ID = "pzr-checkin-root";
+
+  function joinUrl(base, path) {
+    const baseValue = String(base || "").trim();
+    if (!baseValue) {
+      return path;
+    }
+    if (baseValue.endsWith("/") && path.startsWith("/")) {
+      return baseValue.slice(0, -1) + path;
+    }
+    if (!baseValue.endsWith("/") && !path.startsWith("/")) {
+      return baseValue + "/" + path;
+    }
+    return baseValue + path;
+  }
+
+  function resolveCheckinUrl(checkinId) {
+    const idValue = encodeURIComponent(String(checkinId || "").trim());
+    if (options.apiUrl) {
+      const raw = String(options.apiUrl).trim();
+      if (!raw) {
+        return idValue;
+      }
+      if (raw.indexOf("{checkinId}") !== -1) {
+        return raw.replace("{checkinId}", idValue);
+      }
+      if (raw.endsWith("/")) {
+        return raw + idValue;
+      }
+      return raw + "/" + idValue;
+    }
+    const path = String(options.checkinPath || "/api/parazar/checkin/");
+    const withId = path.endsWith("/") ? path + idValue : path + "/" + idValue;
+    return joinUrl(options.apiBase, withId);
+  }
+
+  function ensureStyles() {
+    if (document.getElementById(STYLE_ID)) {
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = [
+      "@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');",
+      ".pzr-checkin-wrap{min-height:var(--pzr-checkin-wrap-min-height,100vh);display:flex;align-items:var(--pzr-checkin-wrap-align,center);justify-content:var(--pzr-checkin-wrap-justify,center);padding:var(--pzr-checkin-wrap-padding,24px);background:var(--pzr-checkin-wrap-bg,#000);color:#fff;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;width:100%;overflow-x:hidden}",
+      ".pzr-checkin-card{position:relative;width:min(520px,95vw);max-width:100%;border-radius:22px;border:0.5px solid rgba(255,255,255,.2);background:linear-gradient(165deg,rgba(23,23,23,.96) 0%,rgba(9,9,9,.98) 100%);padding:22px}",
+      ".pzr-checkin-title{margin:0 0 10px 0;text-align:center}",
+      ".pzr-checkin-title img{display:block;height:var(--pzr-checkin-title-image-height,32px);width:auto;max-width:var(--pzr-checkin-title-image-max-width,min(240px,70vw));margin:0 auto}",
+      ".pzr-checkin-subtitle{margin:var(--pzr-checkin-subtitle-spacing,10px) 0 18px 0;text-align:center}",
+      ".pzr-checkin-subtitle-text{margin:0 auto;max-width:var(--pzr-checkin-subtitle-text-max-width,min(420px,90%));font-size:var(--pzr-checkin-subtitle-text-font-size,clamp(14px,2.2vw,18px));font-weight:var(--pzr-checkin-subtitle-text-font-weight,600);line-height:var(--pzr-checkin-subtitle-text-line-height,1.35);color:var(--pzr-checkin-subtitle-text-color,#c0f333);text-align:center;white-space:pre-line}",
+      ".pzr-checkin-input{width:100%;height:var(--pzr-checkin-input-height,56px);padding:var(--pzr-checkin-input-padding,0 16px);border-radius:var(--pzr-checkin-input-radius,14px);border:var(--pzr-checkin-input-border,0.5px solid rgba(255,255,255,.16));background:var(--pzr-checkin-input-bg,#101010);color:var(--pzr-checkin-input-color,#fff);font-size:var(--pzr-checkin-input-font-size,clamp(16px,2.4vw,20px));text-align:var(--pzr-checkin-input-align,center);letter-spacing:.02em;box-sizing:border-box}",
+      ".pzr-checkin-input::placeholder{color:#8b8b8b}",
+      ".pzr-checkin-input:focus{outline:none;border-color:rgba(192,243,51,.55);box-shadow:0 0 0 2px rgba(192,243,51,.12)}",
+      ".pzr-checkin-submit{width:100%;height:var(--pzr-checkin-button-height,60px);margin-top:14px;border:0;border-radius:var(--pzr-checkin-button-radius,13px);background:var(--pzr-checkin-button-bg,#c0f333);color:var(--pzr-checkin-button-color,#0b0b0b);font-family:inherit;font-size:var(--pzr-checkin-button-font-size,clamp(18px,2.6vw,22px));font-weight:620;letter-spacing:-0.01em;cursor:pointer;box-shadow:var(--pzr-checkin-button-shadow,0 10px 28px rgba(192,243,51,.26),inset 0 1px 0 rgba(255,255,255,.3));transition:transform .14s ease,filter .14s ease}",
+      ".pzr-checkin-submit:hover{filter:brightness(1.03)}",
+      ".pzr-checkin-submit:active{transform:translateY(1px)}",
+      ".pzr-checkin-submit:disabled{opacity:.55;cursor:not-allowed}",
+      ".pzr-checkin-status{min-height:var(--pzr-checkin-status-min-height,22px);margin:12px 2px 0;font-size:var(--pzr-checkin-status-font-size,14px);color:var(--pzr-checkin-status-muted,#bfbfbf);text-align:center}",
+      ".pzr-checkin-status.success{color:var(--pzr-checkin-status-success,#c0f333)}",
+      ".pzr-checkin-status.error{color:var(--pzr-checkin-status-error,#ff8f8f)}",
+      ".pzr-checkin-icon{margin-left:6px;font-weight:700}",
+      ".pzr-checkin-icon.success{color:var(--pzr-checkin-success-icon-color,#49d37e)}",
+      ".pzr-checkin-icon.error{color:var(--pzr-checkin-error-icon-color,#ff6b6b)}",
+      "@media (max-width:480px){.pzr-checkin-wrap{padding:var(--pzr-checkin-wrap-padding-mobile,14px)}.pzr-checkin-card{padding:16px;border-radius:16px}}"
+    ].join("");
+    document.head.appendChild(style);
+  }
+
+  function getMountNode() {
+    const target = document.querySelector(options.mountSelector);
+    if (!target) {
+      throw new Error("setupParazarCheckinForm: conteneur introuvable");
+    }
+    return target;
+  }
+
+  function ensureRoot(mountNode) {
+    let root = document.getElementById(ROOT_ID);
+    if (!root) {
+      root = document.createElement("div");
+      root.id = ROOT_ID;
+      mountNode.appendChild(root);
+    }
+    return root;
+  }
+
+  function applyHorizontalScrollLock() {
+    if (!options.lockHorizontalScroll) {
+      return;
+    }
+    const htmlEl = document.documentElement;
+    if (htmlEl && !htmlEl.dataset.pzrOverflowX) {
+      htmlEl.dataset.pzrOverflowX = htmlEl.style.overflowX || "";
+      htmlEl.style.overflowX = "hidden";
+    }
+    if (document.body && !document.body.dataset.pzrOverflowX) {
+      document.body.dataset.pzrOverflowX = document.body.style.overflowX || "";
+      document.body.style.overflowX = "hidden";
+    }
+  }
+
+  function releaseHorizontalScrollLock() {
+    const htmlEl = document.documentElement;
+    if (htmlEl && htmlEl.dataset.pzrOverflowX != null) {
+      htmlEl.style.overflowX = htmlEl.dataset.pzrOverflowX;
+      delete htmlEl.dataset.pzrOverflowX;
+    }
+    if (document.body && document.body.dataset.pzrOverflowX != null) {
+      document.body.style.overflowX = document.body.dataset.pzrOverflowX;
+      delete document.body.dataset.pzrOverflowX;
+    }
+  }
+
+  function createUi(root) {
+    root.innerHTML = [
+      '<div class="pzr-checkin-wrap">',
+      '  <div class="pzr-checkin-card">',
+      '    <div class="pzr-checkin-title"></div>',
+      '    <div class="pzr-checkin-subtitle"></div>',
+      '    <input id="pzr-checkin-input" class="pzr-checkin-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" />',
+      '    <button id="pzr-checkin-submit" class="pzr-checkin-submit" type="button"></button>',
+      '    <p id="pzr-checkin-status" class="pzr-checkin-status"></p>',
+      "  </div>",
+      "</div>"
+    ].join("");
+
+    const titleNode = root.querySelector(".pzr-checkin-title");
+    if (titleNode) {
+      const titleText = String(options.title || "").trim();
+      const imageUrl = String(options.titleImageUrl || "").trim();
+      const shouldShowTitle = options.showTitle !== false && (titleText || imageUrl);
+      if (!shouldShowTitle) {
+        titleNode.remove();
+      } else if (imageUrl) {
+        titleNode.textContent = "";
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.alt = String(options.titleImageAlt || titleText || "Parazar");
+        img.loading = "lazy";
+        img.decoding = "async";
+        titleNode.appendChild(img);
+      } else {
+        titleNode.textContent = titleText;
+      }
+    }
+
+    const subtitleNode = root.querySelector(".pzr-checkin-subtitle");
+    if (subtitleNode) {
+      const subtitleHtml = String(options.subtitleHtml || "").trim();
+      const subtitleText = String(options.subtitleText || "").trim();
+      subtitleNode.textContent = "";
+      if (subtitleHtml) {
+        const textNode = document.createElement("p");
+        textNode.className = "pzr-checkin-subtitle-text";
+        textNode.innerHTML = subtitleHtml;
+        subtitleNode.appendChild(textNode);
+      } else if (subtitleText) {
+        const textNode = document.createElement("p");
+        textNode.className = "pzr-checkin-subtitle-text";
+        textNode.textContent = subtitleText;
+        subtitleNode.appendChild(textNode);
+      }
+    }
+
+    const wrapNode = root.querySelector(".pzr-checkin-wrap");
+    if (wrapNode) {
+      wrapNode.style.setProperty("--pzr-checkin-wrap-min-height", String(options.wrapMinHeight || "100vh"));
+      wrapNode.style.setProperty("--pzr-checkin-wrap-padding", String(options.wrapPadding || "24px"));
+      wrapNode.style.setProperty("--pzr-checkin-wrap-padding-mobile", String(options.wrapPaddingMobile || "14px"));
+      wrapNode.style.setProperty("--pzr-checkin-wrap-bg", String(options.wrapBackground || "#000"));
+      wrapNode.style.setProperty("--pzr-checkin-wrap-align", String(options.wrapAlign || "center"));
+      wrapNode.style.setProperty("--pzr-checkin-wrap-justify", String(options.wrapJustify || "center"));
+    }
+
+    const cardNode = root.querySelector(".pzr-checkin-card");
+    if (cardNode) {
+      cardNode.style.setProperty("--pzr-checkin-title-image-height", String(options.titleImageHeight || "56px"));
+      cardNode.style.setProperty("--pzr-checkin-title-image-max-width", String(options.titleImageMaxWidth || "260px"));
+      cardNode.style.setProperty("--pzr-checkin-subtitle-spacing", String(options.subtitleSpacing || "10px"));
+      cardNode.style.setProperty("--pzr-checkin-subtitle-text-color", String(options.subtitleTextColor || "#c0f333"));
+      cardNode.style.setProperty("--pzr-checkin-subtitle-text-font-size", String(options.subtitleTextFontSize || "clamp(14px,2.2vw,18px)"));
+      cardNode.style.setProperty("--pzr-checkin-subtitle-text-font-weight", String(options.subtitleTextFontWeight || "600"));
+      cardNode.style.setProperty("--pzr-checkin-subtitle-text-line-height", String(options.subtitleTextLineHeight || "1.35"));
+      cardNode.style.setProperty("--pzr-checkin-subtitle-text-max-width", String(options.subtitleTextMaxWidth || "min(420px,90%)"));
+      cardNode.style.setProperty("--pzr-checkin-input-height", String(options.inputHeight || "56px"));
+      cardNode.style.setProperty("--pzr-checkin-input-padding", String(options.inputPadding || "0 16px"));
+      cardNode.style.setProperty("--pzr-checkin-input-radius", String(options.inputRadius || "14px"));
+      cardNode.style.setProperty("--pzr-checkin-input-font-size", String(options.inputFontSize || "clamp(16px,2.4vw,20px)"));
+      cardNode.style.setProperty("--pzr-checkin-input-bg", String(options.inputBackground || "#101010"));
+      cardNode.style.setProperty("--pzr-checkin-input-border", String(options.inputBorder || "0.5px solid rgba(255,255,255,.16)"));
+      cardNode.style.setProperty("--pzr-checkin-input-color", String(options.inputTextColor || "#ffffff"));
+      cardNode.style.setProperty("--pzr-checkin-input-align", String(options.inputTextAlign || "center"));
+      cardNode.style.setProperty("--pzr-checkin-button-height", String(options.buttonHeight || "60px"));
+      cardNode.style.setProperty("--pzr-checkin-button-radius", String(options.buttonRadius || "13px"));
+      cardNode.style.setProperty("--pzr-checkin-button-font-size", String(options.buttonFontSize || "clamp(18px,2.6vw,22px)"));
+      cardNode.style.setProperty("--pzr-checkin-button-bg", String(options.buttonBackground || "#c0f333"));
+      cardNode.style.setProperty("--pzr-checkin-button-color", String(options.buttonColor || "#0b0b0b"));
+      cardNode.style.setProperty("--pzr-checkin-button-shadow", String(options.buttonShadow || "0 10px 28px rgba(192,243,51,.26),inset 0 1px 0 rgba(255,255,255,.3)"));
+      cardNode.style.setProperty("--pzr-checkin-status-min-height", String(options.statusMinHeight || "22px"));
+      cardNode.style.setProperty("--pzr-checkin-status-font-size", String(options.statusFontSize || "14px"));
+      cardNode.style.setProperty("--pzr-checkin-status-muted", String(options.statusMutedColor || "#bfbfbf"));
+      cardNode.style.setProperty("--pzr-checkin-status-success", String(options.statusSuccessColor || "#c0f333"));
+      cardNode.style.setProperty("--pzr-checkin-status-error", String(options.statusErrorColor || "#ff8f8f"));
+      cardNode.style.setProperty("--pzr-checkin-success-icon-color", String(options.successIconColor || "#49d37e"));
+      cardNode.style.setProperty("--pzr-checkin-error-icon-color", String(options.errorIconColor || "#ff6b6b"));
+    }
+
+    const inputNode = document.getElementById("pzr-checkin-input");
+    if (inputNode) {
+      inputNode.placeholder = String(options.inputPlaceholder || "Checkin-id");
+      inputNode.setAttribute("aria-label", String(options.inputAriaLabel || options.inputPlaceholder || "Checkin-id"));
+    }
+    const submitButton = document.getElementById("pzr-checkin-submit");
+    if (submitButton) {
+      submitButton.textContent = String(options.buttonLabel || "Je valide ma présence");
+    }
+
+    return {
+      root: root,
+      inputNode: document.getElementById("pzr-checkin-input"),
+      submitButton: document.getElementById("pzr-checkin-submit"),
+      statusNode: document.getElementById("pzr-checkin-status")
+    };
+  }
+
+  function setStatus(uiRef, message, type, showIcon) {
+    if (!uiRef || !uiRef.statusNode) {
+      return;
+    }
+    uiRef.statusNode.className = "pzr-checkin-status" + (type ? " " + type : "");
+    uiRef.statusNode.textContent = "";
+    if (!message) {
+      return;
+    }
+    const textNode = document.createElement("span");
+    textNode.textContent = message;
+    uiRef.statusNode.appendChild(textNode);
+    if (showIcon) {
+      const icon = document.createElement("span");
+      icon.className = "pzr-checkin-icon " + (type || "");
+      icon.textContent = type === "error"
+        ? String(options.errorIcon || "✕")
+        : String(options.successIcon || "→");
+      uiRef.statusNode.appendChild(icon);
+    }
+  }
+
+  function scheduleRedirect(url) {
+    const target = String(url || "").trim();
+    if (!target) {
+      return;
+    }
+    const delayMs = Number(options.successRedirectDelayMs);
+    const waitMs = Number.isFinite(delayMs) && delayMs >= 0 ? delayMs : 10000;
+    window.setTimeout(function () {
+      window.location.replace(target);
+    }, waitMs);
+  }
+
+  function scheduleStatusClear(uiRef) {
+    const delayMs = Number(options.errorClearDelayMs);
+    const waitMs = Number.isFinite(delayMs) && delayMs >= 0 ? delayMs : 10000;
+    window.setTimeout(function () {
+      setStatus(uiRef, "", "");
+    }, waitMs);
+  }
+
+  function getCheckinId(uiRef) {
+    if (!uiRef || !uiRef.inputNode) {
+      return "";
+    }
+    return String(uiRef.inputNode.value || "").trim();
+  }
+
+  function updateButtonState(uiRef) {
+    if (!uiRef || !uiRef.submitButton) {
+      return;
+    }
+    const value = getCheckinId(uiRef);
+    uiRef.submitButton.disabled = !value;
+  }
+
+  ensureStyles();
+  const mountNode = getMountNode();
+  const root = ensureRoot(mountNode);
+  applyHorizontalScrollLock();
+
+  const ui = createUi(root);
+  updateButtonState(ui);
+
+  let isSubmitting = false;
+
+  async function handleSubmit() {
+    if (isSubmitting) {
+      return;
+    }
+    const checkinId = getCheckinId(ui);
+    if (!checkinId) {
+      updateButtonState(ui);
+      return;
+    }
+
+    isSubmitting = true;
+    ui.submitButton.disabled = true;
+    setStatus(ui, String(options.pendingMessage || "Validation en cours..."), "");
+
+    try {
+      const response = await fetch(resolveCheckinUrl(checkinId), { method: "POST" });
+      if (response.status === 200) {
+        setStatus(ui, String(options.successMessage || "Présence confirmée"), "success", true);
+        scheduleRedirect(options.successRedirectUrl);
+        if (typeof options.onSubmitSuccess === "function") {
+          options.onSubmitSuccess({ response: response, checkinId: checkinId });
+        }
+        return;
+      }
+      if (response.status === 204) {
+        setStatus(ui, String(options.alreadyConfirmedMessage || "Présence déjà confirmé"), "success", true);
+        scheduleRedirect(options.successRedirectUrl);
+        if (typeof options.onSubmitSuccess === "function") {
+          options.onSubmitSuccess({ response: response, checkinId: checkinId });
+        }
+        return;
+      }
+      if (response.status >= 200 && response.status < 300) {
+        setStatus(ui, String(options.successMessage || "Présence confirmée"), "success", true);
+        scheduleRedirect(options.successRedirectUrl);
+        if (typeof options.onSubmitSuccess === "function") {
+          options.onSubmitSuccess({ response: response, checkinId: checkinId });
+        }
+        return;
+      }
+      if (response.status === 400) {
+        setStatus(ui, String(options.invalidMessage || "Checkin-id non valide ou expiré"), "error", true);
+        scheduleStatusClear(ui);
+        if (typeof options.onSubmitError === "function") {
+          options.onSubmitError({ response: response, checkinId: checkinId });
+        }
+        return;
+      }
+
+      setStatus(ui, String(options.genericErrorMessage || "Impossible de valider la présence"), "error", true);
+      scheduleStatusClear(ui);
+      if (typeof options.onSubmitError === "function") {
+        options.onSubmitError({ response: response, checkinId: checkinId });
+      }
+    } catch (error) {
+      setStatus(ui, String(options.genericErrorMessage || "Impossible de valider la présence"), "error", true);
+      scheduleStatusClear(ui);
+      if (typeof options.onSubmitError === "function") {
+        options.onSubmitError(error);
+      }
+    } finally {
+      isSubmitting = false;
+      updateButtonState(ui);
+    }
+  }
+
+  if (ui.inputNode) {
+    ui.inputNode.addEventListener("input", function () {
+      updateButtonState(ui);
+    });
+    ui.inputNode.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") {
+        handleSubmit();
+      }
+    });
+  }
+
+  if (ui.submitButton) {
+    ui.submitButton.addEventListener("click", function () {
+      handleSubmit();
+    });
+  }
+
+  const readyPromise = Promise.resolve(true);
+
+  return {
+    destroy: function () {
+      if (ui && ui.root) {
+        ui.root.remove();
+      }
+      releaseHorizontalScrollLock();
+    },
+    getState: function () {
+      return { checkinId: getCheckinId(ui) };
+    },
+    ready: readyPromise
+  };
+}
+
 if (typeof window !== "undefined") {
   window.getUrlPayloadId = getUrlPayloadId;
   window.requireUrlPayloadId = requireUrlPayloadId;
@@ -2573,4 +3103,6 @@ if (typeof window !== "undefined") {
   window.setupParazarInstantUserTokenGuard = setupParazarInstantUserTokenGuard;
   window.setupParazarInstantSecureTokenGuard = setupParazarInstantSecureTokenGuard;
   window.setupParazarInstantUserForm = setupParazarInstantUserForm;
+  window.setupParazarCheckinWindowGuard = setupParazarCheckinWindowGuard;
+  window.setupParazarCheckinForm = setupParazarCheckinForm;
 }

@@ -2564,9 +2564,9 @@ function setupParazarInstantUserForm(config) {
 // Checkin time guard (no UI)
 function setupParazarCheckinWindowGuard(config) {
   const options = Object.assign({
-    minHour: "18:00",
+    minHour: "19:00",
     maxHour: "21:00",
-    outsideWindowRedirectUrl: "https://get.parazar.co"
+    outsideWindowRedirectUrl: "https://getapp.parazar.co"
   }, config || {});
 
   function toMinutes(hhmm) {
@@ -2639,14 +2639,16 @@ function setupParazarCheckinForm(config) {
     mountSelector: "body",
     apiBase: "https://backend.parazar.co",
     apiUrl: "",
-    checkinPath: "/api/parazar/checkin/",
+    checkinPath: "/api/parazar/checkin",
+    sendCheckinInPayload: true,
+    payloadKey: "checkin-id",
     title: "Parazar",
     showTitle: true,
     titleImageUrl: "https://cdn.prod.website-files.com/6665627cae20cb25d5ffa6af/698cb46b188c3fb591e3ffa1_Parazar_Logo_PureWhite_RVB.svg",
     titleImageAlt: "Parazar",
     titleImageHeight: "56px",
     titleImageMaxWidth: "260px",
-    subtitleText: "Renseigne ton checkin-id afin de valider ta présence",
+    subtitleText: "Renseigne ton checkin ID afin de valider ta présence",
     subtitleHtml: "",
     subtitleSpacing: "10px",
     subtitleTextColor: "#c0f333",
@@ -2655,7 +2657,7 @@ function setupParazarCheckinForm(config) {
     subtitleTextLineHeight: "1.35",
     subtitleTextMaxWidth: "min(420px,90%)",
     inputPlaceholder: "Checkin-id",
-    inputAriaLabel: "Checkin-id",
+    inputAriaLabel: "Checkin ID",
     inputHeight: "56px",
     inputPadding: "0 16px",
     inputRadius: "14px",
@@ -2684,11 +2686,14 @@ function setupParazarCheckinForm(config) {
     statusSuccessColor: "#c0f333",
     statusErrorColor: "#ff8f8f",
     successMessage: "Présence confirmée",
-    alreadyConfirmedMessage: "Présence déjà confirmé",
-    invalidMessage: "Checkin-id non valide ou expiré",
+    alreadyConfirmedMessage: "Présence déjà confirmée",
+    invalidMessage: "Checkin ID non valide ou expiré",
+    notFoundMessage: "Checkin ID introuvable",
+    rateLimitMessage: "Trop de tentatives, réessaie plus tard",
+    serverErrorMessage: "Erreur serveur, réessaie plus tard",
     genericErrorMessage: "Impossible de valider la présence",
     pendingMessage: "Validation en cours...",
-    successRedirectUrl: "https://getapp.parazar.co",
+    successRedirectUrl: "https://parazar-suivez-vos-envies.webflow.io/instant/checkin-confirmation",
     successRedirectDelayMs: 10000,
     errorClearDelayMs: 10000,
     successIcon: "→",
@@ -2726,14 +2731,20 @@ function setupParazarCheckinForm(config) {
       if (raw.indexOf("{checkinId}") !== -1) {
         return raw.replace("{checkinId}", idValue);
       }
-      if (raw.endsWith("/")) {
-        return raw + idValue;
+      if (!options.sendCheckinInPayload) {
+        if (raw.endsWith("/")) {
+          return raw + idValue;
+        }
+        return raw + "/" + idValue;
       }
-      return raw + "/" + idValue;
+      return raw;
     }
-    const path = String(options.checkinPath || "/api/parazar/checkin/");
-    const withId = path.endsWith("/") ? path + idValue : path + "/" + idValue;
-    return joinUrl(options.apiBase, withId);
+    const path = String(options.checkinPath || "/api/parazar/checkin");
+    if (!options.sendCheckinInPayload) {
+      const withId = path.endsWith("/") ? path + idValue : path + "/" + idValue;
+      return joinUrl(options.apiBase, withId);
+    }
+    return joinUrl(options.apiBase, path);
   }
 
   function ensureStyles() {
@@ -3007,7 +3018,15 @@ function setupParazarCheckinForm(config) {
     setStatus(ui, String(options.pendingMessage || "Validation en cours..."), "");
 
     try {
-      const response = await fetch(resolveCheckinUrl(checkinId), { method: "POST" });
+      const requestUrl = resolveCheckinUrl(checkinId);
+      const payloadKey = String(options.payloadKey || "checkin-id");
+      const payload = {};
+      payload[payloadKey] = checkinId;
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
       if (response.status === 200) {
         setStatus(ui, String(options.successMessage || "Présence confirmée"), "success", true);
         scheduleRedirect(options.successRedirectUrl);
@@ -3034,6 +3053,30 @@ function setupParazarCheckinForm(config) {
       }
       if (response.status === 400) {
         setStatus(ui, String(options.invalidMessage || "Checkin-id non valide ou expiré"), "error", true);
+        scheduleStatusClear(ui);
+        if (typeof options.onSubmitError === "function") {
+          options.onSubmitError({ response: response, checkinId: checkinId });
+        }
+        return;
+      }
+      if (response.status === 404) {
+        setStatus(ui, String(options.notFoundMessage || "Checkin-id introuvable"), "error", true);
+        scheduleStatusClear(ui);
+        if (typeof options.onSubmitError === "function") {
+          options.onSubmitError({ response: response, checkinId: checkinId });
+        }
+        return;
+      }
+      if (response.status === 429) {
+        setStatus(ui, String(options.rateLimitMessage || "Trop de tentatives, réessaie plus tard"), "error", true);
+        scheduleStatusClear(ui);
+        if (typeof options.onSubmitError === "function") {
+          options.onSubmitError({ response: response, checkinId: checkinId });
+        }
+        return;
+      }
+      if (response.status >= 500) {
+        setStatus(ui, String(options.serverErrorMessage || "Erreur serveur, réessaie plus tard"), "error", true);
         scheduleStatusClear(ui);
         if (typeof options.onSubmitError === "function") {
           options.onSubmitError({ response: response, checkinId: checkinId });

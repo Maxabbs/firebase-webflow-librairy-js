@@ -2,7 +2,7 @@
 
 // ⚙️ Initialiser Firebase
 function initFirebase() {
-    const firebaseConfig = {
+    const firebaseConfig = (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.firebase) || {
         apiKey: "AIzaSyDpSD7DH9ZqNGbKV9cY5qlc9YbPlyAc7GY",
         authDomain: "parazar-client-project.firebaseapp.com",
         projectId: "parazar-client-project",
@@ -830,7 +830,7 @@ function setupStripeButtonsWithFirebaseAuth(buttonClass, loginRedirect, verifyEm
 
 function setupParazarInstantRedirectWithFirebaseToken(buttonId, config) {
   const options = Object.assign({
-    apiBase: "https://backend.parazar.co",
+    apiBase: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.backendUrl) || "https://backend.parazar.co",
     apiUrl: "",
     path: "/api/parazar_instant/webflow",
     forceRefreshToken: true,

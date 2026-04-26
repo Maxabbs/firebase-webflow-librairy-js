@@ -234,7 +234,7 @@ function setupParazarSecureSetupIntent(config) {
   const options = Object.assign({
     buttonId: "secure-btn-id",
     stripePublicKey: "",
-    apiBase: "https://backend.parazar.co",
+    apiBase: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.backendUrl) || "https://backend.parazar.co",
     confirmButtonLabel: "Confirmer ma place",
     preauthorizationLabel: "100% gratuit - Aucun débit si tu viens",
     walletMerchantName: "Parazar",
@@ -804,8 +804,8 @@ function setupParazarSecurePayment(config) {
 function setupParazarProReservationForm(config) {
   const options = Object.assign({
     mountSelector: "body",
-    apiUrl: "https://backend.parazar.co/api/pro/tables",
-    missingIdRedirectUrl: "https://pro.parazar.co",
+    apiUrl: ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.backendUrl) || "https://backend.parazar.co") + "/api/pro/tables",
+    missingIdRedirectUrl: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.proUrl) || "https://pro.parazar.co",
     title: "Tables disponibles",
     titleImageUrl: "https://cdn.prod.website-files.com/6665627cae20cb25d5ffa6af/698cb46b188c3fb591e3ffa1_Parazar_Logo_PureWhite_RVB.svg",
     titleImageAlt: "Parazar",
@@ -1406,7 +1406,7 @@ function setupParazarProReservationForm(config) {
 // Token guard for instant user flow
 function setupParazarInstantUserTokenGuard(config) {
   const options = Object.assign({
-    apiBase: "https://backend.parazar.co",
+    apiBase: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.backendUrl) || "https://backend.parazar.co",
     tokenParam: "token",
     token: "",
     tokenCheckPath: "/api/parazar_instant/webflow/submission_token_checking/",
@@ -1483,7 +1483,7 @@ function setupParazarInstantUserTokenGuard(config) {
 // Token guard for submission flow
 function setupParazarInstantSubmissionTokenGuard(config) {
   const options = Object.assign({
-    apiBase: "https://backend.parazar.co",
+    apiBase: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.backendUrl) || "https://backend.parazar.co",
     tokenParam: "id",
     token: "",
     tokenCheckPath: "/api/parazar_instant/webflow/submission_token_checking/",
@@ -1569,7 +1569,7 @@ function setupParazarInstantSubmissionTokenGuard(config) {
 // Token guard for secure/checkin flow
 function setupParazarInstantSecureTokenGuard(config) {
   const options = Object.assign({
-    apiBase: "https://backend.parazar.co",
+    apiBase: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.backendUrl) || "https://backend.parazar.co",
     tokenParam: "id",
     token: "",
     tokenCheckPath: "/api/parazar_instant/webflow/secure_token_checking/",
@@ -1656,7 +1656,7 @@ function setupParazarInstantSecureTokenGuard(config) {
 function setupParazarInstantUserForm(config) {
   const options = Object.assign({
     mountSelector: "body",
-    apiBase: "https://backend.parazar.co",
+    apiBase: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.backendUrl) || "https://backend.parazar.co",
     apiUrl: "",
     submitPath: "/api/parazar_instant/webflow",
     tokenParam: "token",
@@ -2637,7 +2637,7 @@ function setupParazarCheckinWindowGuard(config) {
 function setupParazarCheckinForm(config) {
   const options = Object.assign({
     mountSelector: "body",
-    apiBase: "https://backend.parazar.co",
+    apiBase: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.backendUrl) || "https://backend.parazar.co",
     apiUrl: "",
     checkinPath: "/api/parazar/checkin",
     sendCheckinInPayload: true,

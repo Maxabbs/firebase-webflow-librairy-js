@@ -1,17 +1,37 @@
 // === firebase-auth-helper.js ===
 
 // ⚙️ Initialiser Firebase
-function initFirebase() {
-    const firebaseConfig = (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.firebase) || {
+var FIREBASE_CONFIGS = {
+    prod: {
         apiKey: "AIzaSyDpSD7DH9ZqNGbKV9cY5qlc9YbPlyAc7GY",
         authDomain: "parazar-client-project.firebaseapp.com",
         projectId: "parazar-client-project",
         storageBucket: "parazar-client-project.firebasestorage.app",
         messagingSenderId: "684169267322",
         appId: "1:684169267322:web:4309a01b1943e3f8ff53c3",
-        measurementId: "G-T7BGTDKPLN"
-    };
+    },
+    qual: {
+        apiKey: "AIzaSyC0lbsMNlVc6x3DYOfJFDTjAR3P9iUO4pU",
+        authDomain: "parazar-qual-project.firebaseapp.com",
+        projectId: "parazar-qual-project",
+        storageBucket: "parazar-qual-project.firebasestorage.app",
+        messagingSenderId: "298413855531",
+        appId: "1:298413855531:web:120c1c7f6432a1f2186b6e",
+    },
+};
 
+var PROD_HOSTS = ["parazar.co", "www.parazar.co"];
+
+function _resolveFirebaseConfig() {
+    if (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.firebase) {
+        return window.PARAZAR_CONFIG.firebase;
+    }
+    var host = window.location.hostname;
+    return PROD_HOSTS.indexOf(host) !== -1 ? FIREBASE_CONFIGS.prod : FIREBASE_CONFIGS.qual;
+}
+
+function initFirebase() {
+    var firebaseConfig = _resolveFirebaseConfig();
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }

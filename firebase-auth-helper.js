@@ -11,7 +11,7 @@ var FIREBASE_CONFIGS = {
         appId: "1:684169267322:web:4309a01b1943e3f8ff53c3",
     },
     qual: {
-        apiKey: "AIzaSyC0lbsMNlVc6x3DYOfJFDTjAR3P9iUO4pU",
+        apiKey: "AIzaSyCDlbsMNiVc6x3DYOfJFDTjAR3P9iUO4pU",
         authDomain: "parazar-qual-project.firebaseapp.com",
         projectId: "parazar-qual-project",
         storageBucket: "parazar-qual-project.firebasestorage.app",

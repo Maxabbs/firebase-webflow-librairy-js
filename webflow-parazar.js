@@ -41,7 +41,7 @@ function getUrlPayloadId() {
   return null;
 }
 
-function requireUrlPayloadId(redirectUrl = "https://getapp.parazar.co/p") {
+function requireUrlPayloadId(redirectUrl = ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.getappUrl) || "https://getapp.parazar.co") + "/p") {
   const id = getUrlPayloadId();
 
   if (!id) {
@@ -68,7 +68,7 @@ function getUrlPayloadFormattedId() {
   return isUrlPayloadFormattedId(id) ? id : null;
 }
 
-function requireUrlPayloadFormattedId(redirectUrl = "https://getapp.parazar.co/p") {
+function requireUrlPayloadFormattedId(redirectUrl = ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.getappUrl) || "https://getapp.parazar.co") + "/p") {
   const id = getUrlPayloadFormattedId();
 
   if (!id) {
@@ -375,7 +375,7 @@ function setupParazarSecureSetupIntent(config) {
   }
 
   function resolveSuccessRedirectUrl() {
-    const fallbackUrl = "https://www.parazar.co";
+    const fallbackUrl = (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.websiteUrl) || "https://www.parazar.co";
     const target = runtimePaymentUi.successRedirectUrl || fallbackUrl;
 
     try {
@@ -1411,7 +1411,7 @@ function setupParazarInstantUserTokenGuard(config) {
     token: "",
     tokenCheckPath: "/api/parazar_instant/webflow/submission_token_checking/",
     tokenCheckUrl: "",
-    missingTokenRedirectUrl: "https://getapp.parazar.co/p"
+    missingTokenRedirectUrl: ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.getappUrl) || "https://getapp.parazar.co") + "/p"
   }, config || {});
 
   function joinUrl(base, path) {
@@ -1488,7 +1488,7 @@ function setupParazarInstantSubmissionTokenGuard(config) {
     token: "",
     tokenCheckPath: "/api/parazar_instant/webflow/submission_token_checking/",
     tokenCheckUrl: "",
-    missingTokenRedirectUrl: "https://getapp.parazar.co/p"
+    missingTokenRedirectUrl: ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.getappUrl) || "https://getapp.parazar.co") + "/p"
   }, config || {});
 
   function joinUrl(base, path) {
@@ -1574,7 +1574,7 @@ function setupParazarInstantSecureTokenGuard(config) {
     token: "",
     tokenCheckPath: "/api/parazar_instant/webflow/secure_token_checking/",
     tokenCheckUrl: "",
-    missingTokenRedirectUrl: "https://getapp.parazar.co/p"
+    missingTokenRedirectUrl: ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.getappUrl) || "https://getapp.parazar.co") + "/p"
   }, config || {});
 
   function joinUrl(base, path) {
@@ -1661,7 +1661,7 @@ function setupParazarInstantUserForm(config) {
     submitPath: "/api/parazar_instant/webflow",
     tokenParam: "token",
     token: "",
-    missingTokenRedirectUrl: "https://getapp.parazar.co/p",
+    missingTokenRedirectUrl: ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.getappUrl) || "https://getapp.parazar.co") + "/p",
     title: "Parazar Instantané",
     showTitle: true,
     titleImageUrl: "https://cdn.prod.website-files.com/6665627cae20cb25d5ffa6af/698cb46b188c3fb591e3ffa1_Parazar_Logo_PureWhite_RVB.svg",
@@ -1735,7 +1735,7 @@ function setupParazarInstantUserForm(config) {
       "Paris\nSud",
       "Banlieue Parisienne\n(77, 78, 91, 92, 93, 94, 95)"
     ],
-    successRedirectUrl: "https://www.parazar.co/instant/confirmation",
+    successRedirectUrl: ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.websiteUrl) || "https://www.parazar.co") + "/instant/confirmation",
     submitLabel: "Lancer mon Parazar",
     minHour: "18:00",
     maxHour: "21:00",
@@ -2566,7 +2566,7 @@ function setupParazarCheckinWindowGuard(config) {
   const options = Object.assign({
     minHour: "19:00",
     maxHour: "21:00",
-    outsideWindowRedirectUrl: "https://getapp.parazar.co"
+    outsideWindowRedirectUrl: (window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.getappUrl) || "https://getapp.parazar.co"
   }, config || {});
 
   function toMinutes(hhmm) {
@@ -2693,7 +2693,7 @@ function setupParazarCheckinForm(config) {
     serverErrorMessage: "Erreur serveur, réessaie plus tard",
     genericErrorMessage: "Impossible de valider la présence",
     pendingMessage: "Validation en cours...",
-    successRedirectUrl: "https://www.parazar.co/instant/checkin-confirmation",
+    successRedirectUrl: ((window.PARAZAR_CONFIG && window.PARAZAR_CONFIG.websiteUrl) || "https://www.parazar.co") + "/instant/checkin-confirmation",
     successRedirectDelayMs: 10000,
     errorClearDelayMs: 10000,
     successIcon: "→",
